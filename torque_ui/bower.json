@@ -1,0 +1,32 @@
+{
+  "name": "torque",
+  "homepage": "https://github.com/jad-b/Torque",
+  "authors": [
+    "jad-b <j.american.db@gmail.com>"
+  ],
+  "description": "Plan, analyze, predict, and optimize your workouts.",
+  "main": "",
+  "moduleType": [],
+  "keywords": [
+    "workouts",
+    "golang",
+    "bootstrap",
+    "jquery"
+  ],
+  "license": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "v4.0.0-alpha.2",
+    "jquery": "~2.1.4",
+    "mustache": "~2.2.0",
+    "swagger-js": "~2.1.9",
+    "moment": "~2.10.6"
+  }
+}

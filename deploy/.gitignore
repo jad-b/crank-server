@@ -1,0 +1,4 @@
+.vault_pw.txt
+
+# Postgresql backups
+*.template.pg

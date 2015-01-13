@@ -1,0 +1,7 @@
+{
+    "user": "torque",
+    "password": "torque",
+    "database": "torque",
+    "host": "localhost:15432",
+    "sslmode": "disable"
+}

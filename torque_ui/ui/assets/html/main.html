@@ -1,0 +1,95 @@
+{{ define "body" }}
+
+<div class="container-fluid"><!-- Entire page -->
+  <div class="row">
+
+    {{ template "sidebar" . }}
+
+    <!--Main Content-->
+    <div class="col-sm-offset-2 col-sm-8 col-md-offset-2 col-md-6 hero">
+
+      <section class="row"><!--Form-->
+
+        <form class="workout-form" role="form">
+          <!-- Header -->
+          <div class="form-group row">
+            <!-- Workout Timestamp -->
+            <div class="col-sm-4">
+              <input type="datetime" class="form-control" name="workoutTimestamp" placeholder="Timestamp">
+            </div>
+          </div>
+
+          <!-- Workout tags -->
+          <div class="tag-hdr row">
+            <div class="col-sm-12">
+              <h5>Tags</h5>
+              <!--<i id="add-workout-tag" class="material-icons">add_circle_outline</i>-->
+            </div>
+          </div>
+          <!--Insert Tags Here: $('#wkt-tag-group').append(...) -->
+          <div id="wkt-tag-group" class="row">
+            <fieldset class="form-group col-sm-12">
+              <label class="sr-only"></label>
+              <input type="text" class="form-control" name="workout-tags"
+                                                      placeholder="key=value; key=value;...">
+            </fieldset>
+          </div>
+
+          <!-- Exercise(s) -->
+          <div id="exercises" class="row" data-exercise-count="1">
+            <!--Exercise Title & Add Button-->
+            <div class="exercises-header">
+              <h4>Exercises</h4>
+              <i id="add-exercise" class="material-icons">add_circle_outline</i>
+            </div>
+
+            <div class="exercise row" data-exercise-index="1"><!--Wrap each Exercise in a div-->
+
+              <!--Exercise Name-->
+              <fieldset class="form-group">
+                <div class="col-sm-8">
+                  <label class="sr-only"></label>
+                  <input type="text" class="form-control" name="exercise1-name" placeholder="Exercise Name">
+                </div>
+              </fieldset>
+
+              <!--Sets-->
+              <fieldset class="form-group">
+                <div class="col-sm-offset-2">
+                  <label class="sr-only"></label>
+                  <input type="text" class="form-control" name="exercise1-sets" placeholder="Weight x Reps; ...">
+                </div>
+              </fieldset>
+
+              <!-- Tags -->
+              <fieldset class="form-group">
+                <div class="col-sm-offset-2">
+                  <label class="sr-only"></label>
+                  <input type="text" class="form-control" name="exercise1-tags"
+                                                          placeholder="key=value; key=value;...">
+                </div>
+              </fieldset>
+
+            </div> <!-- End Exercise -->
+          </div> <!-- End Exercise(s) -->
+
+          <!--Submit Button-->
+          <div class="form-group row">
+            <div class="col-sm-offset-8 col-sm-2">
+              <button type="submit" class="btn">Submit</button>
+            </div>
+          </div>
+        </form>
+      </section> <!--End Form-->
+
+      <!--Hidden until the user submits data-->
+      <section class="row">
+        <div class="wkt-display well well-lg"></div>
+      </section>
+
+    </div><!-- End Main Section -->
+
+  </div><!--Page-->
+</div>
+
+{{ end }}

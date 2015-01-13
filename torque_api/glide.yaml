@@ -1,0 +1,7 @@
+package: github.com/jad-b/torque
+import:
+  - package: github.com/gorilla/mux
+  - package: github.com/gorilla/context
+  - package: github.com/jmoiron/sqlx
+  - package: github.com/lib/pq
+  - package: github.com/jad-b/flagit

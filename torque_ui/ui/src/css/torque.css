@@ -1,0 +1,128 @@
+html {
+  /* Can be further scaled using em */
+  font: 300 62.5%/22px "Lato", "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+body {
+  background: #fff;
+  overflow: auto;
+}
+
+html, body, .container-fluid, .row {
+  height: 100% !important;
+}
+
+/*
+ ========================================
+ Sidebar
+ ========================================
+*/
+aside.sidebar {
+  background: rgba(51, 51, 51, 0.72);
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: space-between;
+  height: 100%;
+  /* Clear col-md-* padding */
+  padding: 0;
+  text-align: center;
+}
+
+.sidebar a {
+  background: inherit;
+  border-bottom: 1px solid #eee !important;
+  border: 0 none;
+  color: #fff !important;
+  display: flex;
+  height: 100%;
+  text-decoration: none;
+}
+
+.sidebar a:last-child {
+  border-bottom: 0 none;
+}
+
+.sidebar a i {
+  /* Auto marging centers content under 'display: flex' parent */
+  margin: auto;
+  font-size: 5rem;
+}
+
+.sidebar a:hover {
+  background: #5c5c46 !important;
+}
+
+#oauth-signin {
+  height: 3rem;
+  margin: auto;
+}
+
+/* TODO: Display sidebar icons horizontally across the top on small screens */
+
+/*
+ ========================================
+ Hero
+ ========================================
+*/
+.hero {
+  margin-top: 5%;
+}
+
+/*
+ ========================================
+ Workout Form
+ ========================================
+*/
+.workout-form {
+  padding: 1rem;
+  background: rgba(168, 216, 240, 0.4);
+  border-radius: 0.5rem;
+  overflow: auto;
+}
+
+/* Display h3 & icon side-by-side */
+.tag-hdr h5,
+.tag-hdr i{
+  display: inline-block;
+}
+
+.tag-hdr i{
+  cursor: pointer;
+}
+
+.form-tag {
+  display: inline-block;
+  width: auto;
+}
+
+#exercises {
+  border: 0.15rem solid #fff;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.workout-form button {
+  background: rgb(154, 160, 159);
+  margin-top: 1rem;
+}
+
+.exercises-header h4,
+.exercises-header i{
+  display: inline-block;
+}
+
+.exercises-header i{
+  cursor: pointer;
+}
+
+.exercise{
+  border: 0.15rem solid #ddd;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.wkt-display {
+  display: none;
+  margin: 0 auto;
+  white-space: pre-line;
+}

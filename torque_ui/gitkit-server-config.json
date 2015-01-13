@@ -1,0 +1,7 @@
+{
+  "clientId": "308023769360-o3icg7efnse2juf4o19ucjcqbnge1v4a.apps.googleusercontent.com",
+  "serviceAccountEmail": "account-1@torque-1144.iam.gserviceaccount.com",
+  "serviceAccountPrivateKeyFile": "/home/jdb/.secrets/Torque-ad4d4449101d.p12",
+  "widgetUrl": "http://localhost:18001/callback",
+  "cookieName": "gtoken"
+}

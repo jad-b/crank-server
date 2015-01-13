@@ -1,0 +1,191 @@
+swagger: '2.0'
+info:
+  version: 0.0.1
+  title: 'Torque API'
+host: localhost
+basePath: /
+schemes:
+  - http
+paths:
+  /wkt:
+    post:
+      tags:
+        - wkt
+      summary: Produce a Workout in .wkt format.
+      operationId: toWktFormat
+      consumes: 
+        - application/json
+      produces: 
+        - application/vnd.torque.wkt
+      parameters:
+        - in: body
+          name: body
+          description: Workout in json format
+          required: true
+          schema:
+            $ref: '#/definitions/Workout'
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: '#/definitions/Wkt'
+definitions:
+  Workout:
+    type: object
+    description: |
+      Encapsulates a single workout session.
+    properties:
+      workout_id:
+        type: integer
+        format: int64
+      last_modified:
+        type: string
+        format: date-time
+      user_id:
+        type: string
+      exercises:
+        type: array
+        items:
+          $ref: '#/definitions/Exercise'
+      tags:
+        type: array
+        items:
+          $ref: '#/definitions/KVP'
+  Exercise:
+    type: object
+    description: |
+      An exercise performed within a workout.
+    properties:
+      execise_id:
+        type: integer
+        format: int64
+      workout_id:
+        type: integer
+        format: int64
+      last_modified:
+        type: string
+        format: date-time
+      movement:
+        type: string
+      modifiers: 
+        type: array
+        items:
+          type: string
+      sets:
+        type: array
+        items:
+          $ref: '#/definitions/Set'
+      tags:
+        type: array
+        items:
+          $ref: '#/definitions/KVP'
+  Set:
+    type: object
+    description: Iterations of an exercise.
+    properties:
+      set_id:
+        description: |
+          DB row ID
+        type: integer
+        format: int64
+      exercise_id:
+        type: integer
+        format: int64
+      work:
+        description: |
+          Description of activity; examples include
+          
+            * weight used for weightlifting
+            * movement type for gymnastics or martial arts 
+            * lap distance for swimming or sprinting 
+            * total distance for long-distance running or cycling
+        
+          Bodyweight, if known, will be listed. Otherwise a placeholder of '-1'
+          will be used.
+        type: integer
+        format: int64
+      work_unit:
+        description: |
+          * Weight: lbs, kgs, resistance band strength
+          * Distance: ft, meters, mile, kilometers
+        type: string
+      repetition:
+        description: |
+          One "cycle" of work; one complete lift, one lap, one block of time
+        type: integer
+        format: int64
+      rep_unit:
+        description: |
+          Unit of repetition.
+            * Movement repetition for weightlifting, calisthentics, or martial arts
+            * Lap in swimming or sprinting
+            * Time for timed events
+        type: string
+      rest:
+        description: |
+          Rest period leading up to this set. A negative value indicates this 
+          was the first set, or infinite rest prior. 
+        type: integer
+        format: int64
+      ordering:
+        description: Order the set was executed within the exercise
+        type: integer
+        format: int64
+  Repetition:
+    description: |
+      One "cycle" of work; one complete lift, one lap, one block of time
+    type: object
+    properties:
+      starttime: 
+        description: Recorded UTC start time of repetition as a UNIX timestamp 
+        type: integer
+        format: int64
+      endtime: 
+        description: Recorded UTC end time of repetition as a UNIX timestamp 
+        type: integer
+        format: int64
+      timeseries:
+        description: |
+          Timeseries data relating to this repetition.
+          
+          Data is represented as 
+          Examples:
+            * Force output
+            * Heartrate
+        additionalProperties:
+          $ref: '#/definitions/Timeseries'
+  Timeseries:
+    description: Array of timeseries data
+    type: array
+    items:
+      $ref: '#/definitions/TimeseriesPoint'
+  TimeseriesPoint:
+    description: A single data point within the timeseries
+    type: object
+    properties:
+      timestamp:
+        description: |
+          Unix timestamp of absolute time in UTC. Clock drifts will have already 
+          been normalized before storage.
+        type: integer
+        format: int64
+      value:
+        type: number
+        format: float
+  KVP:
+    type: object
+    description: Key-value pair
+    properties:
+      tag_id:
+        type: integer
+        format: int64
+      key:
+        type: string
+      value:
+        type: string
+  Wkt:
+    type: object
+    description: Workout displayed in the human-readable .wkt format
+    properties:
+      wkt:
+        type: string
