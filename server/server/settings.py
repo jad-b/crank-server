@@ -28,6 +28,10 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
+CRANK_APPS = (
+    'api',
+    'db',
+)
 
 INSTALLED_APPS = (
     'django.contrib.admin',
@@ -36,7 +40,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-)
+) + CRANK_APPS
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
