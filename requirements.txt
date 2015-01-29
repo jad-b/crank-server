@@ -1,0 +1,3 @@
+django
+pep8
+pyflakes
