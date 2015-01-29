@@ -30,7 +30,6 @@ ALLOWED_HOSTS = []
 # Application definition
 CRANK_APPS = (
     'api',
-    'db',
 )
 
 INSTALLED_APPS = (
