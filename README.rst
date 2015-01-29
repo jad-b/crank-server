@@ -1,5 +1,7 @@
-# crank-server
-Server-side work for the Crank app
+crank-server
+============
+
+API server for `Crank <https://github.com/jad-b/Crank>`_.
 
 Git Hooks
 ---------
