@@ -3,7 +3,8 @@ from django.contrib import admin
 
 import api.urls
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     # Examples:
     # url(r'^$', 'crank_server.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),

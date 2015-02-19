@@ -4,11 +4,9 @@ from django.contrib.auth.models import User
 from django.test import SimpleTestCase
 from django.core.urlresolvers import reverse
 
-from .. import views
 
-
-class TestAuthentication(SimpleTestCase):
-    auth_url = reverse('api:auth')
+class TestLogin(SimpleTestCase):
+    auth_url = reverse('api:login')
 
     @classmethod
     def setUpClass(self):
@@ -36,8 +34,9 @@ class TestAuthentication(SimpleTestCase):
         self.assertEqual(msg['message'], 'Credentials are invalid')
 
     def test_inactive_user(self):
-        response = self.client.post(self.auth_url,
-                {'username': 'rumplestiltskin', 'password': 'inactive'})
+        response = self.client.post(
+            self.auth_url,
+            {'username': 'rumplestiltskin', 'password': 'inactive'})
 
         self.assertEqual(response.status_code, 200)
         msg = json.loads(response.content.decode())

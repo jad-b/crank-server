@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views.generic import View
 
 
-class AuthenticateView(View):
+class LoginView(View):
     """Authenticate a user."""
 
     def post(self, request, *args, **kwags):
@@ -27,3 +27,7 @@ class AuthenticateView(View):
             # Return an 'invalid login' error message.
             return JsonResponse({'message': 'Credentials are invalid',
                                  'error': True})
+
+
+class RegisterView(View):
+    """Register a new user."""
