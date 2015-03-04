@@ -1,0 +1,14 @@
+data:
+  image: postgres:9.4
+  volumes: 
+    # Relative to the directory you call "docker-compose" from
+     -  docker/pg_data/:/var/lib/postgresql/data
+db:
+  image: postgres:9.4
+  volumes_from:
+    - data
+  ports:
+    - "127.0.0.1::5432"
+  environment:
+    POSTGRES_USER: jdb
+    POSTGRES_PASSWORD: jdizzle
