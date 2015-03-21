@@ -1,0 +1,34 @@
+{
+	"build_systems":
+	[
+		{
+			"name": "runserver",
+			"shell_cmd": "./manage.py runserver",
+			"working_dir": "${project_path}/server"
+		},
+		{
+			"name": "Run Tests",
+			"shell_cmd": "./manage.py test",
+			"working_dir": "${project_path}/server"
+		}
+	],
+	"folders":
+	[
+		{
+			"follow_symlinks": true,
+			"path": "."
+		},
+		{
+			"follow_symlinks": true,
+			"path": "/home/jdb/Dropbox/dev/crank"
+		},
+		{
+			"follow_symlinks": true,
+			"path": "/home/jdb/Dropbox/dev/logbook"
+		}
+	],
+	"settings":
+	{
+		"python_interpreter": "/home/jdb/.venv/crank-server/bin/python"
+	}
+}
