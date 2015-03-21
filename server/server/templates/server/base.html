@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+
+{% load static %}
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Crank - {% block title %}{% endblock %}</title>
+    {# <link rel="shortcut icon" href={% static 'assets/dyn_favicon.ico' %}
+          type="image/x-icon"> #}
+
+    <!-- Bootstrap core CSS -->
+    <link href="{% static 'css/bootstrap.css' %}" rel="stylesheet">
+    {% block stylesheets %}{% endblock stylesheets %}
+    <script type="text/javascript" src="{% static 'js/jquery-2.1.1.min.js' %}"></script>
+</head>
+
+<body>
+
+<!-- Static navbar -->
+<div class="navbar navbar-inverse navbar-default navbar-static-top" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="{% url 'home' %}">Support Tools (Jackal)</a>
+        </div>
+        <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li><a href="{% url 'home' %}">Home</a></li>
+            </ul>
+        </div>
+        <!--/.nav-collapse -->
+    </div>
+</div>
+
+
+<div class="container">
+    {% block body_content %}
+    <h1>Big things poppin'</h1>
+
+    <p>Little things still very much alive though.</p>
+    {% endblock %}
+
+</div>
+<div class="footer" id="footer">
+  <div class="container">
+    <table class="table">
+        <tr>
+            <td>Brought to you by <a href="https://github.com/jad-b/crank" target="blank">jad-b</a></td>
+        </tr>
+    </table>
+  </div>
+</div>
+<script type="text/javascript" src="{% static 'js/bootstrap.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/django_csrf.js' %}"></script>
+{% block js_includes_block %}
+{% endblock %}
+</body>
+</html>
