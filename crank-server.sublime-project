@@ -15,16 +15,16 @@
 	"folders":
 	[
 		{
-			"follow_symlinks": true,
 			"path": "."
 		},
 		{
-			"follow_symlinks": true,
 			"path": "/home/jdb/Dropbox/dev/crank"
 		},
 		{
-			"follow_symlinks": true,
 			"path": "/home/jdb/Dropbox/dev/logbook"
+		},
+		{
+			"path": "/home/jdb/Dropbox/dev/q"
 		}
 	],
 	"settings":

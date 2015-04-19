@@ -1,2 +1,2 @@
-django==1.7
-psycopg2==2.6
+django
+psycopg2

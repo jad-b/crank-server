@@ -51,6 +51,8 @@ ROOT_URLCONF = 'server.urls'
 
 WSGI_APPLICATION = 'server.wsgi.application'
 
+# CREATE USER crank WITH PASSWORD 'cranky' SUPERUSER CREATEDB CREATEROLE LOGIN;
+# CREATE DATABASE crankdb WITH OWNER crank TEMPLATE=template1 ENCODING='utf-8';
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',

@@ -3,8 +3,9 @@ from django.db import models
 
 class Workout(models.Model):
     """Model representing an entire workout."""
-    start = models.DateTimeField(unique=True)
-    comment = models.CharField(max_length=256, blank=True)
+    start = models.DateTimeField(unique=True, auto_now_add=True)
+    comment = models.CharField(max_length=256, blank=True, null=True)
+    title = models.CharField(max_length=128, blank=True, null=True)
 
 
 class ExerciseName(models.Model):
