@@ -1,21 +1,24 @@
-package crank
+package client
 
 import (
+	"encoding/json"
+	"github.com/jad-b/crank/crank"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 )
 
-var serverURL = "http://localhost:8000"
-
 // GetWorkout retrieves a workout from the server.
-func GetWorkout(timestamp time.Time) (w *Workout, err error) {
-	url := &url.URL{Scheme: "http", Host: serverUrl, Path: "/workout/"}
-	url.RawQuery = &url.Values{
+func GetWorkout(base string, timestamp time.Time) (w *crank.Workout, err error) {
+	u, err := url.Parse(base)
+	u.Path = "/workout/"
+	u.RawQuery = url.Values{
 		// string => []string
-		"timestamp": {timestamp},
+		"timestamp": {timestamp.String()},
 	}.Encode()
-	res, err := http.Get(url.String())
+	res, err := http.Get(u.String())
 	body, err := ioutil.ReadAll(res.Body)
 	err = json.Unmarshal(body, w)
 	log.Printf("Received this: %+v", w)
