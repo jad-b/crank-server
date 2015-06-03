@@ -25,8 +25,11 @@ func TestGetWorkoutHandler(t *testing.T) {
 
 	GetWorkoutHandler(w, req)
 	var wkt crank.Workout
-	json.Unmarshal(w.Body.Bytes(), &wkt)
-	// log.Printf("Returned workout: %+v", wkt)
+	err = json.Unmarshal(w.Body.Bytes(), &wkt)
+	if err != nil {
+		t.Error(err)
+	}
+	log.Printf("Returned workout: %+v", wkt)
 
 	if &wkt.Timestamp == nil {
 		t.Errorf("Failed to unmarshal workout: %+v", wkt)
@@ -45,9 +48,9 @@ func TestGetWorkout(t *testing.T) {
 	testTime := time.Now()
 	w, err := client.GetWorkout(server.URL, testTime)
 	if err != nil {
-		t.Errorf("Error wasn't nil! %s", err)
+		t.Error(err)
 	} else if w.Timestamp != testTime {
-		t.Errorf("Expected the same time to be returned")
+		t.Errorf("%s != %s", w.Timestamp, testTime)
 	} else if w.Comment != fmt.Sprintf("Time is %s", testTime.String()) {
 		t.Errorf("Comment was not what we expected")
 	}

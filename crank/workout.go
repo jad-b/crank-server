@@ -6,7 +6,7 @@ import (
 
 // Workout ...
 type Workout struct {
-	Timestamp time.Time  `json:"timetstamp"`
+	Timestamp time.Time  `json:"timestamp"`
 	Comment   string     `json:"comment"`
 	Exercises []Exercise `json:"exercises"`
 }
