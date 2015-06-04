@@ -2,6 +2,7 @@ package crank
 
 import (
 	"time"
+	"fmt"
 )
 
 // Workout ...
@@ -14,6 +15,14 @@ type Workout struct {
 // NewWorkout creates a workout with the current time.
 func NewWorkout() *Workout {
 	return &Workout{Timestamp: time.Now()}
+}
+
+// LookupWorkout returns workouts from the database by timestamp.
+func LookupWorkout(timestamp time.Time) (w *Workout, err error) {
+	return &Workout{
+		Timestamp: timestamp,
+		Comment: fmt.Sprintf("Time is %s", timestamp.Format(time.RFC3339)),
+	}, nil
 }
 
 // Exercise ...

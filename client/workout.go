@@ -19,9 +19,9 @@ func GetWorkout(base string, timestamp time.Time) (w *crank.Workout, err error) 
 	u.Path = "/workout/"
 	u.RawQuery = url.Values{
 		// string => []string
-		"timestamp": {timestamp.String()},
+		"timestamp": {timestamp.Format(time.RFC3339)},
 	}.Encode()
-	log.Printf("Requesting workout at time %s", timestamp)
+	log.Printf("Client: Requesting workout at time %s", timestamp.Format(time.RFC3339))
 
 	res, err := http.Get(u.String())
 	if err != nil {
@@ -31,13 +31,13 @@ func GetWorkout(base string, timestamp time.Time) (w *crank.Workout, err error) 
 	if err != nil {
 		log.Fatal("Failed to read response body:\n%s", res.Body)
 	}
-	log.Printf("Response Body: %s", body)
+	log.Printf("Client: Response Body: %s", body)
 
 	// ??? We need to pass a reference to the pointer?
 	err = json.Unmarshal(body, &w)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Received this: %+v", w)
+	log.Printf("Client: Received this: %+v", w)
 	return
 }

@@ -1,13 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/jad-b/crank/api"
-	"github.com/jad-b/crank/crank"
 	"log"
 	"net/http"
-	"time"
 )
 
 // IdentityHandler echoes the hostname back to the client

@@ -10,15 +10,25 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+	"net/url"
 )
 
 const (
-	baseURL = "http://localhost:8000"
+	baseURL string = "http://localhost:8000"
 )
 
 func TestGetWorkoutHandler(t *testing.T) {
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", baseURL, nil)
+	workoutURL, err := url.Parse(baseURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	nowTime := time.Now()
+	q := workoutURL.Query()
+	q.Set("timestamp", nowTime.Format(time.RFC3339))
+	workoutURL.RawQuery = q.Encode()
+	log.Printf("Test: Sending %s", workoutURL)
+	req, err := http.NewRequest("GET", workoutURL.String(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -29,14 +39,14 @@ func TestGetWorkoutHandler(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	log.Printf("Returned workout: %+v", wkt)
+	log.Printf("Test: Returned workout: %+v", wkt)
 
 	if &wkt.Timestamp == nil {
 		t.Errorf("Failed to unmarshal workout: %+v", wkt)
-	} else if diff := time.Now().Sub(wkt.Timestamp).Seconds(); diff > .1 {
+	} else if diff := time.Now().Sub(wkt.Timestamp).Seconds(); diff > 1 {
 		t.Errorf("Took longer than 100 ms to return workout(%s): %s",
 			wkt.Timestamp, diff)
-	} else if wkt.Comment != fmt.Sprintf("Time is %s", wkt.Timestamp.String()) {
+	} else if wkt.Comment != fmt.Sprintf("Time is %s", wkt.Timestamp.Format(time.RFC3339)) {
 		t.Error("Fuck, this unit test is really getting specific")
 	}
 }
@@ -47,11 +57,12 @@ func TestGetWorkout(t *testing.T) {
 
 	testTime := time.Now()
 	w, err := client.GetWorkout(server.URL, testTime)
+	log.Printf("Test: Received this workout:\n\t%+v", w)
 	if err != nil {
 		t.Error(err)
-	} else if w.Timestamp != testTime {
+	} else if w.Timestamp.Format(time.RFC3339) != testTime.Format(time.RFC3339) {
 		t.Errorf("%s != %s", w.Timestamp, testTime)
-	} else if w.Comment != fmt.Sprintf("Time is %s", testTime.String()) {
+	} else if w.Comment != fmt.Sprintf("Time is %s", testTime.Format(time.RFC3339)) {
 		t.Errorf("Comment was not what we expected")
 	}
 }
