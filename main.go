@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/jad-b/crank/api"
 	"log"
 	"net/http"
+
+	"github.com/jad-b/crank/api"
+	"github.com/jad-b/crank/ui"
 )
 
 // IdentityHandler echoes the hostname back to the client
@@ -17,6 +19,7 @@ func main() {
 	log.Print("Starting server")
 	http.HandleFunc("/host/", IdentityHandler)
 	http.HandleFunc("/workout/", api.GetWorkoutHandler)
+	http.HandleFunc("/", ui.HomePage)
 	http.ListenAndServe(":8000", nil)
 	defer log.Fatal("Stopping server")
 }
