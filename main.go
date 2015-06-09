@@ -19,7 +19,7 @@ func main() {
 	log.Print("Starting server")
 	http.HandleFunc("/host/", IdentityHandler)
 	http.HandleFunc("/workout/", api.GetWorkoutHandler)
-	http.HandleFunc("/", ui.HomePage)
+	http.HandleFunc("/", ui.IndexPage)
 	http.ListenAndServe(":8000", nil)
 	defer log.Fatal("Stopping server")
 }
