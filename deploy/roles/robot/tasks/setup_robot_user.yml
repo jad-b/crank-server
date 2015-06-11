@@ -1,13 +1,30 @@
 ---
-- name: create the admin group
+- name: create a group for robots
   group:
-    name: admin
+    name: "{{ robot_group }}"
   become: yes
 
-# - name: add 'admin' group to allowed SSH users
+- name: add {{ robot_group }} group to allowed SSH users
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^AllowGroups"
+    line: "AllowGroups {{ robot_group }}"
+    owner: root
+    mode: 0644
+  become: yes
+  tags: sshd
+
+- name: give {{ robot_group }} group users no-password sudo
+  copy:
+    src: robot_sudoers
+    dest: /etc/sudoers.d/robot
+    mode: 0440
+    owner: root
+    group: root
+    validate: 'visudo -cf %s'
+  become: yes
 
 - name: create the robot user
-
   user:
     name: "{{ robot_name }}"
     comment: "Robot worker on our behalf"
@@ -23,3 +40,22 @@
     - robot_id_rsa.pub
   become_user: "{{ robot_name }}"
   become: yes
+  notify:
+    - restart sshd
+  tags: sshd
+
+- name: install public key for robot user
+  copy:
+    src: robot_id_rsa.pub
+    dest: /home/{{ robot_name }}/.ssh/
+    mode: 0644
+  become: yes
+  become_user: "{{ robot_name  }}"
+
+- name: install private key for robot user
+  copy:
+    src: robot_id_rsa
+    dest: /home/{{ robot_name }}/.ssh/
+    mode: 0600
+  become: yes
+  become_user: "{{ robot_name  }}"

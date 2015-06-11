@@ -1,0 +1,13 @@
+---
+- name: Install unattended-upgrades
+  apt:
+    name:unattended-upgrades
+    update_cache:yes
+
+- name: Activate updates
+  lineinfile:
+    dest: /etc/apt/apt.conf.d/10periodic
+    regexp: "APT::Periodic::Unattended-Upgrade"
+    line: "APT::Periodic::Unattended-Upgrade \"1\";"
+    owner: root
+    mode: 0644
