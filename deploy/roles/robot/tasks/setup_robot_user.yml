@@ -1,0 +1,25 @@
+---
+- name: create the admin group
+  group:
+    name: admin
+  become: yes
+
+# - name: add 'admin' group to allowed SSH users
+
+- name: create the robot user
+
+  user:
+    name: "{{ robot_name }}"
+    comment: "Robot worker on our behalf"
+    groups: admin
+    append: yes
+  become: yes
+
+- name: add the public key to the authorized keys
+  authorized_key:
+    user: "{{ robot_name }}"
+    key: "{{ item }}"
+  with_file:
+    - robot_id_rsa.pub
+  become_user: "{{ robot_name }}"
+  become: yes
