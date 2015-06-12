@@ -1,8 +1,17 @@
 ---
+- name: Update apt cachce if old
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  ignore_errors: true
+  become: yes
+
+
 - name: Install unattended-upgrades
   apt:
-    name:unattended-upgrades
-    update_cache:yes
+    name: unattended-upgrades
+    state: present
+  become: yes
 
 - name: Activate updates
   lineinfile:
@@ -11,3 +20,4 @@
     line: "APT::Periodic::Unattended-Upgrade \"1\";"
     owner: root
     mode: 0644
+  become: yes
