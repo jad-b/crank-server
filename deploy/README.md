@@ -18,3 +18,11 @@ the `-u $USER` option.
 We're using [Docker's bootstrap script](https://get.docker.io/) for setting
 up Docker on our hosts. That can be done with this command:
     `ansible-playbook docker.yml`
+
+## Security
+Ideally, the following policies should be in place:
+* All requests go through Nginx, which enforces HTTPS
+* Nginx performs SSL termination, and load-balances the requests out to the
+  backend serveres
+* Servers _only_ accept incoming HTTP connections on port 80 from their Nginx
+  load-balancer.
