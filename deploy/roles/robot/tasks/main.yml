@@ -1,4 +1,0 @@
----
-- include: setup_robot_user.yml become=yes
-- include: activate_security_updates.yml
-- include: install_docker.yml become=yes

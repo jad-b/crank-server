@@ -1,0 +1,20 @@
+---
+- name: check if docker is installed
+  shell: dpkg-query -l lxc-docker
+  register: docker_installed
+  failed_when: docker_installed.rc != 0
+  changed_when: docker_installed.rc != 0
+
+- name: install Docker via curl'd script
+  shell: curl -sSL https://get.docker.com/ | sh
+  when: docker_installed|failed or upgrade_docker
+  become: yes
+
+- name: add {{ item }} to docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  with_items: "{{ docker_users }}"
+  become: yes
+

@@ -1,0 +1,14 @@
+---
+
+- name: run nginx container
+  docker:
+    image: "{{ nginx_image }}"
+    name: nginx
+    ports:
+      - "{{ nginx_https_port }}":443
+      - "{{ nginx_http_port }}":80
+    links: "{{ nginx_links }}"
+    pull: missing
+    restart_policy: always
+    state: reloaded
+  tags: docker nginx

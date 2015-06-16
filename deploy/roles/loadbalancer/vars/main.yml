@@ -1,0 +1,6 @@
+---
+nginx_image: nginx:1.9.1
+nginx_https_port: 8443
+nginx_http_port: 8080
+# No links for now
+nginx_links:

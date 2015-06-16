@@ -1,0 +1,5 @@
+---
+- include: prep_for_robots.yml
+- include: setup_robot_user.yml
+- include: activate_security_updates.yml
+- include: install_docker.yml
