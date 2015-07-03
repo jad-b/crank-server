@@ -1,0 +1,10 @@
+db:
+  image: postgres:9.4.4
+  environment:
+    POSTGRES_USER: crank-api
+    POSTGRES_PASSWORD: cranky
+  ports:
+    - "127.0.0.1:5432:5432"
+  volumes:
+    - pg_data:/var/lib/postgresql/data
+
