@@ -2,12 +2,13 @@ package client
 
 import (
 	"encoding/json"
-	"github.com/jad-b/crank/crank"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/jad-b/crank/crank"
 )
 
 // GetWorkout retrieves a workout from the server.

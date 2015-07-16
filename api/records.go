@@ -1,28 +1,27 @@
-package crank
+package api
 
-import (
-	"time"
-	"fmt"
-)
+import "time"
+
+/*
+	Metrics
+*/
+
+// BodyweightRecord is a timestamped bodyweight record.
+type BodyweightRecord struct {
+	Bodyweight float32 `json:"bodyweight"`
+	// 'omitempty' => Skip the timestamp if it's empty
+	Timestamp time.Time `json:"timestamp"`
+}
+
+/*
+	Workouts
+*/
 
 // Workout ...
 type Workout struct {
 	Timestamp time.Time  `json:"timestamp"`
 	Comment   string     `json:"comment"`
 	Exercises []Exercise `json:"exercises"`
-}
-
-// NewWorkout creates a workout with the current time.
-func NewWorkout() *Workout {
-	return &Workout{Timestamp: time.Now()}
-}
-
-// LookupWorkout returns workouts from the database by timestamp.
-func LookupWorkout(timestamp time.Time) (w *Workout, err error) {
-	return &Workout{
-		Timestamp: timestamp,
-		Comment: fmt.Sprintf("Time is %s", timestamp.Format(time.RFC3339)),
-	}, nil
 }
 
 // Exercise ...

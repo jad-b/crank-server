@@ -17,9 +17,10 @@ func IdentityHandler(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	log.Print("Starting server")
+	defer log.Fatal("Stopping server")
 	http.HandleFunc("/host/", IdentityHandler)
 	http.HandleFunc("/workout/", api.GetWorkoutHandler)
+	http.HandleFunc("/metrics/bodyweight", api.PostBodyweightHandler)
 	http.HandleFunc("/", ui.IndexPage)
 	http.ListenAndServe(":8000", nil)
-	defer log.Fatal("Stopping server")
 }

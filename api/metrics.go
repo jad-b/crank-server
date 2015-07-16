@@ -1,17 +1,29 @@
 package api
 
-	"github.com/jad-b/crank-server/crank"
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"time"
 
-	"github.com/jad-b/crank/web"
+	"github.com/jad-b/crank/crank"
+	"github.com/jad-b/crank/http"
 )
+
+// timefromQuery extracts and parses a RFC3339 timestamp from the request
+// Query.
+func timeFromQuery(req *http.Request) (t time.Time, err error) {
+	queryTime := req.URL.Query().Get("timestamp")
+	if &queryTime == nil {
+		log.Print("Failed to retrieve a timestamp from the request")
+	}
+	return time.Parse(time.RFC3339, queryTime)
+}
 
 // GetWorkoutHandler returns a workout by timestamp
 func GetWorkoutHandler(w http.ResponseWriter, req *http.Request) {
-	timestamp, err := web.timeFromQuery(req)
+	timestamp, err := timeFromQuery(req)
 	workout, err := crank.LookupWorkout(timestamp)
 	if err != nil {
 		http.NotFound(w, req) // Write 404 to response

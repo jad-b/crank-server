@@ -1,0 +1,7 @@
+{
+    "user": "jdb",
+    "password": "postgrizzle",
+    "database": "jdb",
+    "host": "localhost:5432",
+    "sslmode": "disable"
+}
