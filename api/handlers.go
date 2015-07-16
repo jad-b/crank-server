@@ -1,33 +1,50 @@
 package api
 
-	"github.com/jad-b/crank-server/crank"
-import (
-	"encoding/json"
-	"fmt"
-	"net/http"
+/*
+	URL Path: /workout
+*/
 
-	"github.com/jad-b/crank/web"
+import (
+	"net/http"
+	"time"
+
+	"github.com/jad-b/torque"
 )
 
-// GetWorkoutHandler returns a workout by timestamp
-func GetWorkoutHandler(w http.ResponseWriter, req *http.Request) {
-	timestamp, err := web.timeFromQuery(req)
+// Workout ...
+type Workout struct {
+	Timestamp time.Time  `json:"timestamp"`
+	Comment   string     `json:"comment"`
+	Exercises []Exercise `json:"exercises"`
+}
+
+// Exercise ...
+type Exercise struct {
+	Sets    []Set  `json:"sets"`
+	Comment string `json:"comment"`
+}
+
+// ExerciseTag ...
+type ExerciseTag struct {
+	Tag     string `json:"tag"`
+	Primary bool   `json:"primary"`
+}
+
+// Set ...
+type Set struct {
+	Reps   uint8 `json:"reps"`
+	Weight uint8 `json:"weight"`
+	Order  uint8 `json:"order"`
+	Rest   uint8 `json:"rest"`
+}
+
+// GetWorkout returns a workout by timestamp
+func GetWorkout(w http.ResponseWriter, req *http.Request) {
+	timestamp, err := web.Stamp(req)
 	workout, err := crank.LookupWorkout(timestamp)
 	if err != nil {
 		http.NotFound(w, req) // Write 404 to response
 		return
 	}
 	writeJSON(w, http.StatusOK, workout)
-}
-
-// PostBodyweightHandler creates a new bodyweight record.
-func PostBodyweightHandler(w http.ResponseWriter, req *http.Request) {
-	var bwRec *BodyweightRecord
-	body := http.ReadBody(w, req)
-	if err = json.Unmarshal(body, bwRec); err != nil {
-		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
-	}
-	// TODO Create a record in the database
-	fmt.Println("Received a bodyweight of %f w/ timestamp %s",
-		bwRec.Bodyweight, bwRec.Timestamp)
 }

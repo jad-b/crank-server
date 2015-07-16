@@ -1,45 +1,59 @@
 package api
 
+/*
+	URL Path: /metrics
+*/
+
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/jad-b/crank/crank"
-	"github.com/jad-b/crank/http"
+	"github.com/jad-b/torque"
 )
 
-// timefromQuery extracts and parses a RFC3339 timestamp from the request
-// Query.
-func timeFromQuery(req *http.Request) (t time.Time, err error) {
-	queryTime := req.URL.Query().Get("timestamp")
-	if &queryTime == nil {
-		log.Print("Failed to retrieve a timestamp from the request")
-	}
-	return time.Parse(time.RFC3339, queryTime)
+// Bodyweight is a timestamped bodyweight record.
+type Bodyweight struct {
+	Bodyweight float32 `json:"bodyweight"`
+	// 'omitempty' => Skip the timestamp if it's empty
+	Timestamp time.Time `json:"timestamp"`
 }
 
-// GetWorkoutHandler returns a workout by timestamp
-func GetWorkoutHandler(w http.ResponseWriter, req *http.Request) {
-	timestamp, err := timeFromQuery(req)
-	workout, err := crank.LookupWorkout(timestamp)
-	if err != nil {
-		http.NotFound(w, req) // Write 404 to response
+// DeleteBodyweight removes the bodyweight record from the database.
+func DeleteBodyweight(w http.ResponseWriter, req *http.Request) {
+	timestamp, err := web.stamp(req)
+	// Lookup record by timestamp
+	log.Printf("Looking up Bodyweight record from %s from DB", timestamp)
+	bw := nil
+	if bw == nil {
+		http.NotFound(w, req)
 		return
 	}
-	writeJSON(w, http.StatusOK, workout)
+	writeOkayJSON(w, bw)
 }
 
-// PostBodyweightHandler creates a new bodyweight record.
-func PostBodyweightHandler(w http.ResponseWriter, req *http.Request) {
-	var bwRec *BodyweightRecord
-	body := http.ReadBody(w, req)
-	if err = json.Unmarshal(body, bwRec); err != nil {
+// GetBodyweight returns the related bodyweight record
+func GetBodyweight(w http.ResponseWriter, req *http.Request) {
+	timestamp, err := web.stamp(req)
+	// Lookup bodyweight from DB
+	log.Printf("Looking up Bodyweight record from %s from DB", timestamp)
+	bw := nil
+	if bw == nil {
+		http.NotFound(w, req)
+		return
+	}
+	writeOkayJSON(w, bw)
+}
+
+// PostBodyweight creates a new bodyweight record.
+func PostBodyweight(w http.ResponseWriter, req *http.Request) {
+	var bwRec *Bodyweight
+	err := web.ReadBodyTo(w, req, bwRec)
+	if err != nil {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
+		return
 	}
 	// TODO Create a record in the database
-	fmt.Println("Received a bodyweight of %f w/ timestamp %s",
-		bwRec.Bodyweight, bwRec.Timestamp)
+	log.Printf("Creating bodyweight record of %+v", bwRec)
+	writeOkayJSON(w, bwRec)
 }
