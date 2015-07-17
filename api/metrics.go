@@ -14,13 +14,13 @@ import (
 
 // Bodyweight is a timestamped bodyweight record.
 type Bodyweight struct {
-	Bodyweight float32 `json:"bodyweight"`
-	// 'omitempty' => Skip the timestamp if it's empty
-	Timestamp time.Time `json:"timestamp"`
+	RESTfulRouter `json:"-"`
+	Bodyweight    float32   `json:"bodyweight"`
+	Timestamp     time.Time `json:"timestamp"`
 }
 
-// DeleteBodyweight removes the bodyweight record from the database.
-func DeleteBodyweight(w http.ResponseWriter, req *http.Request) {
+// Delete removes the bodyweight record from the database.
+func (bw *Bodyweight) Delete(w http.ResponseWriter, req *http.Request) {
 	timestamp, err := web.stamp(req)
 	// Lookup record by timestamp
 	log.Printf("Looking up Bodyweight record from %s from DB", timestamp)
@@ -32,8 +32,8 @@ func DeleteBodyweight(w http.ResponseWriter, req *http.Request) {
 	writeOkayJSON(w, bw)
 }
 
-// GetBodyweight returns the related bodyweight record
-func GetBodyweight(w http.ResponseWriter, req *http.Request) {
+// Get returns the related bodyweight record
+func (bw *Bodyweight) Get(w http.ResponseWriter, req *http.Request) {
 	timestamp, err := web.stamp(req)
 	// Lookup bodyweight from DB
 	log.Printf("Looking up Bodyweight record from %s from DB", timestamp)
@@ -45,8 +45,8 @@ func GetBodyweight(w http.ResponseWriter, req *http.Request) {
 	writeOkayJSON(w, bw)
 }
 
-// PostBodyweight creates a new bodyweight record.
-func PostBodyweight(w http.ResponseWriter, req *http.Request) {
+// Post creates a new bodyweight record.
+func (bw *Bodyweight) Post(w http.ResponseWriter, req *http.Request) {
 	var bwRec *Bodyweight
 	err := web.ReadBodyTo(w, req, bwRec)
 	if err != nil {
@@ -56,4 +56,9 @@ func PostBodyweight(w http.ResponseWriter, req *http.Request) {
 	// TODO Create a record in the database
 	log.Printf("Creating bodyweight record of %+v", bwRec)
 	writeOkayJSON(w, bwRec)
+}
+
+// Put updates a Bodyweight resource.
+func (bw *Bodyweight) Put(w http.ResponseWriter, req *http.Request) {
+	return
 }

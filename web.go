@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -8,16 +9,22 @@ import (
 	"time"
 )
 
-// LogHTTPError captures and writes a 500 HTTP error.
-func LogHTTPError(w http.ResponseWriter, err error) {
-	log.Print(err.Error())
-	http.Error(w, err.Error(), http.StatusInternalServerError)
+// LogRequestThenError dumps the request into log output and returns an error. It is really
+// only good as a placeholder, which is why it returns an 501 Not Implemented error.
+func LogRequestThenError(w http.ResponseWriter, req *http.Request) {
+	var buf *bytes.Buffer
+	req.Write(buf)
+	log.Printf("Incoming request:\n%s", buf.String())
+	http.Error(w,
+		"Your request was logged, but no functionality exists at this endpoint.",
+		http.StatusNotImplemented)
 }
 
 // ReadBody extracts the body from the HTTP request. If there is an error, it
 // writes it back to the response.
 func ReadBody(w http.ResponseWriter, req *http.Request) (b []byte) {
 	b, err := ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
 	if err != nil {
 		http.Error(w, "Failed to read request body", http.StatusBadRequest)
 		return nil
@@ -30,10 +37,10 @@ func ReadBodyTo(w http.ResponseWriter, req *http.Request, v interface{}) error {
 	return json.NewDecoder(req.Body).Decode(v)
 }
 
-// stamp ensures a timestamp is attached to the Request. First it looks for
+// Stamp ensures a timestamp is attached to the Request. First it looks for
 // a Query field "timestamp". Failing that, it returns the current time.
 // Query.
-func stamp(req *http.Request) (t time.Time, err error) {
+func Stamp(req *http.Request) (t time.Time, err error) {
 	queryTime := req.URL.Query().Get("timestamp")
 	if &queryTime == nil {
 		return time.Now(), nil
@@ -41,10 +48,10 @@ func stamp(req *http.Request) (t time.Time, err error) {
 	return time.Parse(time.RFC3339, queryTime)
 }
 
-// writeJSON writes the value v to the http response stream as json with standard
+// WriteJSON writes the value v to the http response stream as json with standard
 // json encoding.
-// Stole from github.com/docker/docker/api/server
-func writeJSON(w http.ResponseWriter, code int, v interface{}) {
+// Stolen from github.com/docker/docker/api/server
+func WriteJSON(w http.ResponseWriter, code int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	err := json.NewEncoder(w).Encode(v)
@@ -55,6 +62,7 @@ func writeJSON(w http.ResponseWriter, code int, v interface{}) {
 	}
 }
 
-func writeOkayJSON(w http.ResponseWriter, v interface{}) {
-	return writeJSON(w, http.StatusOK, v)
+// WriteOkayJSON encodes v to the HTTP response with a 200 OK status code.
+func WriteOkayJSON(w http.ResponseWriter, v interface{}) {
+	WriteJSON(w, http.StatusOK, v)
 }
