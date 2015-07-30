@@ -27,11 +27,11 @@ var (
 	PsqlPassword = flag.String("psql-password", "", "Postgresql password")
 	// PsqlDB is the Postgresql databse name
 	PsqlDB = flag.String("psql-db", "", "Postgresql DB")
-	// PGConn represents an open connection to a Postgres DB
-	PGConn *sql.DB
+	// DBConn represents an open connection to a Postgres DB
+	DBConn *sql.DB
 )
 
-// Shared PGConn singleton
+// Shared DBConn singleton
 
 // PostgresConfig is the minimal config needed to connect to a Postgres database.
 type PostgresConfig struct {
@@ -62,12 +62,12 @@ func (conf *PostgresConfig) SafeString() string {
 
 // GetDBConnection opens and returns a connection to the Postgresql DB
 func GetDBConnection(conf *PostgresConfig) *sql.DB {
-	PGConn, err := sql.Open("postgres", conf.buildPGURL())
+	DBConn, err := sql.Open("postgres", conf.buildPGURL())
 	if err != nil {
 		log.Fatalf("Can't connect to db: %s", err)
 	}
 	log.Printf("Database connection has been established; %s", conf.SafeString())
-	return PGConn
+	return DBConn
 }
 
 // LoadPGConfig opens a PostgresConfig from a file
