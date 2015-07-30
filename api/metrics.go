@@ -34,15 +34,16 @@ func (bw *Bodyweight) Delete(w http.ResponseWriter, req *http.Request) {
 
 // Get returns the related bodyweight record
 func (bw *Bodyweight) Get(w http.ResponseWriter, req *http.Request) {
+	var bwRec *Bodyweight
 	timestamp, err := web.stamp(req)
-	// Lookup bodyweight from DB
 	log.Printf("Looking up Bodyweight record from %s from DB", timestamp)
-	bw := nil
-	if bw == nil {
+	err = db.QueryRow("SELECT bodyweight, timestamp FROM Bodyweight WHERE timestamp = $1",
+		timestamp).Scan(bwRec)
+	if err != nil {
+		log.Printf("Problem reading from database: %s", err.Error())
 		http.NotFound(w, req)
-		return
 	}
-	writeOkayJSON(w, bw)
+	writeOkayJSON(w, bwRec)
 }
 
 // Post creates a new bodyweight record.
@@ -60,5 +61,9 @@ func (bw *Bodyweight) Post(w http.ResponseWriter, req *http.Request) {
 
 // Put updates a Bodyweight resource.
 func (bw *Bodyweight) Put(w http.ResponseWriter, req *http.Request) {
-	return
+	var bwRec *Bodyweight
+	ts := web.Stamp(req)
+	// TODO Update record from the database using timestamp
+	// Write updated record to client
+	writeOkayJSON(w, bwRec)
 }

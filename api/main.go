@@ -7,8 +7,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-
-	"github.com/jad-b/torque/ui"
 )
 
 var (
@@ -34,10 +32,19 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/host/", IdentityHandler)
 	mux.HandleFunc("/workout/", api.GetWorkoutHandler)
-	mux.HandleFunc("/", ui.IndexPage)
 
 	// Register RESTfulHandlers
 	mux.HandlerFunc("/metrics/bodyweight/", &api.Bodyweight{})
+
+	// Setup our database connection
+	pgConf := LoadPGConfig()
+	pgConf := &PostgresConfig{
+		User:     *PsqlUser,
+		Password: *PsqlPassword,
+		Database: *PsqlDB,
+		Host:     net.JoinHostPort(*PsqlHost, *PsqlPort),
+	}
+	PGConn = GetDBConnection(pgConf)
 
 	// Start the server
 	svrAddr := net.JoinHostPort(*addr, *port)

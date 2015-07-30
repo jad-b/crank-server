@@ -9,12 +9,17 @@ import (
 	"time"
 )
 
+// RequestToBuffer writes the HTTP request to a buffer for printing
+func RequestToBuffer(req *http.Request) *bytes.Buffer {
+	var buf *bytes.Buffer
+	req.Write(buf)
+	return buf
+}
+
 // LogRequestThenError dumps the request into log output and returns an error. It is really
 // only good as a placeholder, which is why it returns an 501 Not Implemented error.
 func LogRequestThenError(w http.ResponseWriter, req *http.Request) {
-	var buf *bytes.Buffer
-	req.Write(buf)
-	log.Printf("Incoming request:\n%s", buf.String())
+	log.Printf("Incoming request:\n%s", RequestToBuffer(req).String())
 	http.Error(w,
 		"Your request was logged, but no functionality exists at this endpoint.",
 		http.StatusNotImplemented)
