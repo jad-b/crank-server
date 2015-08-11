@@ -1,5 +1,7 @@
 &tau;
 =====
+[![Build Status](https://travis-ci.org/jad-b/Torque.svg?branch=master)](https://travis-ci.org/jad-b/Torque)
+
 __Torque__ is a platform for collecting, analyzing, and acting upon biometric data.
 
 This data (will) include everything from workouts to basic biomarkers to blood chemistry to psychologic profiles.
