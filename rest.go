@@ -9,10 +9,10 @@ import (
 // interactions. It supports GET, POST, PUT, and DELETE operations, as well as
 // the ServeHTTP method required for HTTP handlers.
 type RESTfulHandler interface {
-	Get(http.ResponseWriter, *http.Request)
-	Post(http.ResponseWriter, *http.Request)
-	Put(http.ResponseWriter, *http.Request)
-	Delete(http.ResponseWriter, *http.Request)
+	HandleGet(http.ResponseWriter, *http.Request)
+	HandlePost(http.ResponseWriter, *http.Request)
+	HandlePut(http.ResponseWriter, *http.Request)
+	HandleDelete(http.ResponseWriter, *http.Request)
 }
 
 // RouteRequest returns the corresponding method based on the incoming
@@ -31,13 +31,13 @@ func RouteRequest(rr RESTfulHandler) func(http.ResponseWriter, *http.Request) {
 func switchByMethod(rr RESTfulHandler, req *http.Request) func(http.ResponseWriter, *http.Request) {
 	switch req.Method {
 	case "GET":
-		return rr.Get
+		return rr.HandleGet
 	case "POST":
-		return rr.Post
+		return rr.HandlePost
 	case "PUT":
-		return rr.Put
+		return rr.HandlePut
 	case "DELETE":
-		return rr.Delete
+		return rr.HandleDelete
 	default:
 		return func(writer http.ResponseWriter, request *http.Request) {
 			http.Error(

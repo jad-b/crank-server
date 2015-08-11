@@ -25,11 +25,11 @@ type Bodyweight struct {
 }
 
 /*
-	DBResourcer
+	DBResource
 */
 
-// DBCreate inserts a new bodyweight entry into the DB.
-func (bw *Bodyweight) DBCreate(conn *sql.DB) error {
+// Create inserts a new bodyweight entry into the DB.
+func (bw *Bodyweight) Create(conn *sql.DB) error {
 	_, err := conn.Exec(`
 	INSERT INTO metrics.bodyweight (timestamp, weight, comment)
 	VALUES ($1, $2, $3)`,
@@ -40,8 +40,8 @@ func (bw *Bodyweight) DBCreate(conn *sql.DB) error {
 	return nil
 }
 
-// DBRetrieve does a lookup for the corresponding bodyweight record by timestamp.
-func (bw *Bodyweight) DBRetrieve(conn *sql.DB) error {
+// Retrieve does a lookup for the corresponding bodyweight record by timestamp.
+func (bw *Bodyweight) Retrieve(conn *sql.DB) error {
 	log.Printf("Looking up Bodyweight record from %s from DB", bw.Timestamp)
 	err := conn.QueryRow(`
 	SELECT (timestamp, weight, comment)
@@ -55,8 +55,8 @@ func (bw *Bodyweight) DBRetrieve(conn *sql.DB) error {
 	return nil
 }
 
-// DBUpdate modifies the matching row in the DB by timestamp.
-func (bw *Bodyweight) DBUpdate(conn *sql.DB) error {
+// Update modifies the matching row in the DB by timestamp.
+func (bw *Bodyweight) Update(conn *sql.DB) error {
 	// Update record in database
 	// TODO Only overwrite with provided fields. Maybe by building the SQL
 	// statement string w/ conditional logic?
@@ -71,8 +71,8 @@ func (bw *Bodyweight) DBUpdate(conn *sql.DB) error {
 	return nil
 }
 
-// DBDelete removes the row from the DB
-func (bw *Bodyweight) DBDelete(conn *sql.DB) error {
+// Delete removes the row from the DB
+func (bw *Bodyweight) Delete(conn *sql.DB) error {
 	// Lookup record by timestamp
 	err := conn.QueryRow(`
 	DELETE FROM metrics.bodyweight
@@ -88,14 +88,14 @@ func (bw *Bodyweight) DBDelete(conn *sql.DB) error {
 	RESTfulHandler
 */
 
-// Post creates a new bodyweight record.
-func (bw *Bodyweight) Post(w http.ResponseWriter, req *http.Request) {
+// HandlePost creates a new bodyweight record.
+func (bw *Bodyweight) HandlePost(w http.ResponseWriter, req *http.Request) {
 	err := torque.ReadBodyTo(w, req, bw)
 	if err != nil {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
 	}
-	if err = bw.DBCreate(torque.DBConn); err != nil {
+	if err = bw.Create(torque.DBConn); err != nil {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
@@ -103,15 +103,15 @@ func (bw *Bodyweight) Post(w http.ResponseWriter, req *http.Request) {
 	torque.WriteOkayJSON(w, bw)
 }
 
-// Get returns the related bodyweight record
-func (bw *Bodyweight) Get(w http.ResponseWriter, req *http.Request) {
+// HandleGet returns the related bodyweight record
+func (bw *Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
 	timestamp, err := torque.Stamp(req)
 	if err != nil {
 		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
 		return
 	}
 	bw.Timestamp = timestamp
-	if err = bw.DBRetrieve(torque.DBConn); err != nil {
+	if err = bw.Retrieve(torque.DBConn); err != nil {
 		http.NotFound(w, req)
 		return
 	}
@@ -119,15 +119,15 @@ func (bw *Bodyweight) Get(w http.ResponseWriter, req *http.Request) {
 	torque.WriteOkayJSON(w, bw)
 }
 
-// Put updates a Bodyweight resource.
-func (bw *Bodyweight) Put(w http.ResponseWriter, req *http.Request) {
+// HandlePut updates a Bodyweight resource.
+func (bw *Bodyweight) HandlePut(w http.ResponseWriter, req *http.Request) {
 	// Parse body of PUT request into a Bodyweight struct
 	err := torque.ReadBodyTo(w, req, bw)
 	if err != nil {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
 	}
-	if err = bw.DBUpdate(torque.DBConn); err != nil {
+	if err = bw.Update(torque.DBConn); err != nil {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
@@ -136,15 +136,15 @@ func (bw *Bodyweight) Put(w http.ResponseWriter, req *http.Request) {
 	torque.WriteOkayJSON(w, bw)
 }
 
-// Delete removes the bodyweight record from the database.
-func (bw *Bodyweight) Delete(w http.ResponseWriter, req *http.Request) {
+// HandleDelete removes the bodyweight record from the database.
+func (bw *Bodyweight) HandleDelete(w http.ResponseWriter, req *http.Request) {
 	// Retrieve timestamp from request
 	timestamp, err := torque.Stamp(req)
 	if err != nil {
 		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
 		return
 	}
-	if err = bw.DBDelete(torque.DBConn); err != nil {
+	if err = bw.Delete(torque.DBConn); err != nil {
 		http.NotFound(w, req)
 		return
 	}
@@ -171,13 +171,13 @@ func (bw *Bodyweight) ParseFlags(action string, args []string) error {
 
 	switch action {
 	case "create":
-		return bw.DBCreate(torque.DBConn)
+		return bw.Create(torque.DBConn)
 	case "retrieve":
-		return bw.DBRetrieve(torque.DBConn)
+		return bw.Retrieve(torque.DBConn)
 	case "update":
-		return bw.DBUpdate(torque.DBConn)
+		return bw.Update(torque.DBConn)
 	case "delete":
-		return bw.DBDelete(torque.DBConn)
+		return bw.Delete(torque.DBConn)
 	default:
 		log.Fatalf("%s is an invalid action", action)
 		return nil

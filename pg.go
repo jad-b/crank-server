@@ -33,10 +33,10 @@ var (
 
 // DBResource defines an object which implements basic data operations
 type DBResource interface {
-	DBCreate() error
-	DBRetrieve() error
-	DBUpdate() error
-	DBDelete() error
+	Create() error
+	Retrieve() error
+	Update() error
+	Delete() error
 }
 
 // PostgresConfig is the minimal config needed to connect to a Postgres database.
