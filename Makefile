@@ -14,7 +14,7 @@ build: $(APPS)
 # How to *actually* build each binary
 $(BUILD_DIR)/%:
 		@mkdir -p $(dir $@) # Create "$BUILD_DIR/%" if it doesn't exist
-		go build ${GOFLAGS} -o $(abspath $@) ./$*
+		go build ${GOFLAGS} -o $(abspath $(@D))/torque_$(@F) ./$*
 
 
 # Create a rule for each listed app, which we'll define the targets of below
@@ -22,8 +22,8 @@ $(APPS): %: $(BUILD_DIR)/bin/%
 $(BINARIES): %: $(BUILD_DIR)/%
 
 # Rules for building each binary
-$(BUILD_DIR)/bin/cli: $(CLI_SRCS)
-$(BUILD_DIR)/bin/rest: $(REST_SRCS)
+$(BUILD_DIR)/cli: $(CLI_SRCS)
+$(BUILD_DIR)/rest: $(REST_SRCS)
 
 clean:
 	# Delete built binaries
