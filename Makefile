@@ -9,7 +9,7 @@ CLI_SRCS = $(wildcard bin/cli/main.go */*.go)
 REST_SRCS = $(wildcard bin/rest/main.go */*.go)
 
 # Build all binaries
-all: $(APPS)
+build: $(APPS)
 
 # How to *actually* build each binary
 $(BUILD_DIR)/%:
