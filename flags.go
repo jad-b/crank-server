@@ -7,19 +7,22 @@ type FlagParser interface {
 	ParseFlags(action string, args []string) error
 }
 
-// Custom timestamp flag
-type timestamp time.Time
+// TimestampFlag is a custom command-line flag for accepting timestamps
+type TimestampFlag time.Time
 
-func (ts *timestamp) String() string {
+func (ts *TimestampFlag) String() string {
 	return time.Time(*ts).String()
 }
 
-func (ts *timestamp) Set(value string) error {
+// Set reads the raw string value into a TimestampFlag, or dies
+// trying...actually it just returns nil.
+func (ts *TimestampFlag) Set(value string) error {
+	// TODO Change to a  list of valid timestamp formats
 	MyTimeFormat := "2006Jan21504"
 	t, err := time.Parse(MyTimeFormat, value)
 	if err != nil {
 		return err
 	}
-	*ts = timestamp(t)
+	*ts = TimestampFlag(t)
 	return nil
 }

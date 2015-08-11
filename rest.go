@@ -21,24 +21,30 @@ type RESTfulHandler interface {
 // Example Usage:
 //   rr := &Bodyweight{}
 //   http.HandleFunc("/foo", RouteMethod(rr))
-func RouteRequest() func(http.ResponseWriter, *http.Request) {
-	return func(http.ResponseWriter, *http.Request) {
-		switch req.Method {
-		case "GET":
-			return rr.Get
-		case "POST":
-			return rr.Post
-		case "PUT":
-			return rr.Put
-		case "DELETE":
-			return rr.Delete
-		default:
-			return func(writer http.ReponseWriter, request *http.Request) {
-				return http.Error(
-					writer,
-					fmt.Sprintf("%s is not a support HTTP method for this resource", req.Method),
-					http.StatusMethodNotAllowed)
-			}
+func RouteRequest(rr RESTfulHandler) func(http.ResponseWriter, *http.Request) {
+	// Accept RESTfulHandler, return f(w, req)
+	return func(w http.ResponseWriter, req *http.Request) {
+		switchByMethod(rr, req)
+	}
+}
+
+func switchByMethod(rr RESTfulHandler, req *http.Request) func(http.ResponseWriter, *http.Request) {
+	switch req.Method {
+	case "GET":
+		return rr.Get
+	case "POST":
+		return rr.Post
+	case "PUT":
+		return rr.Put
+	case "DELETE":
+		return rr.Delete
+	default:
+		return func(writer http.ResponseWriter, request *http.Request) {
+			http.Error(
+				writer,
+				fmt.Sprintf("%s is not a support HTTP method for this resource",
+					request.Method),
+				http.StatusMethodNotAllowed)
 		}
 	}
 }

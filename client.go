@@ -25,5 +25,5 @@ func PostJSON(serverURL string, body interface{}) (resp *http.Response, err erro
 	if err != nil {
 		return nil, err
 	}
-	return c.Post(serverURL, "application/json", bytes.NewBuffer(payload))
+	return http.Post(serverURL, "application/json", bytes.NewBuffer(payload))
 }

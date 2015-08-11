@@ -20,7 +20,7 @@ import (
 // );
 type Bodyweight struct {
 	Timestamp time.Time `json:"timestamp"`
-	Weight    float32   `json:"weight"`
+	Weight    float64   `json:"weight"`
 	Comment   string    `json:"comment"`
 }
 
@@ -28,8 +28,8 @@ type Bodyweight struct {
 	DBResourcer
 */
 
-// Create inserts a new bodyweight entry into the DB.
-func (bw *Bodyweight) Create(conn *sql.DB) error {
+// DBCreate inserts a new bodyweight entry into the DB.
+func (bw *Bodyweight) DBCreate(conn *sql.DB) error {
 	_, err := conn.Exec(`
 	INSERT INTO metrics.bodyweight (timestamp, weight, comment)
 	VALUES ($1, $2, $3)`,
@@ -60,7 +60,7 @@ func (bw *Bodyweight) DBUpdate(conn *sql.DB) error {
 	// Update record in database
 	// TODO Only overwrite with provided fields. Maybe by building the SQL
 	// statement string w/ conditional logic?
-	result, err := conn.Exec(`
+	_, err := conn.Exec(`
 	UPDATE metrics.bodyweight
 	SET weight=$2, comment='$3'
 	WHERE timestamp > $1`,
@@ -95,60 +95,61 @@ func (bw *Bodyweight) Post(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
 	}
-	if err = bw.Create(); err != nil {
+	if err = bw.DBCreate(torque.PGConn); err != nil {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
 	log.Printf("Created %+v", bw)
-	writeOkayJSON(w, bw)
+	torque.WriteOkayJSON(w, bw)
 }
 
 // Get returns the related bodyweight record
 func (bw *Bodyweight) Get(w http.ResponseWriter, req *http.Request) {
-	timestamp, err := web.Stamp(req)
+	timestamp, err := torque.Stamp(req)
 	if err != nil {
 		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
 		return
 	}
-	if err = bw.Retrieve(); err != nil {
+	bw.Timestamp = timestamp
+	if err = bw.DBRetrieve(torque.PGConn); err != nil {
 		http.NotFound(w, req)
 		return
 	}
 	log.Printf("Retrieved %+v", bw)
-	writeOkayJSON(w, bwg)
+	torque.WriteOkayJSON(w, bw)
 }
 
 // Put updates a Bodyweight resource.
 func (bw *Bodyweight) Put(w http.ResponseWriter, req *http.Request) {
 	// Parse body of PUT request into a Bodyweight struct
-	err := web.ReadBodyTo(w, req, bw)
+	err := torque.ReadBodyTo(w, req, bw)
 	if err != nil {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
 	}
-	if err = bw.Retriev(); err != nil {
+	if err = bw.DBUpdate(torque.PGConn); err != nil {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
 	log.Printf("Updated %+v", bw)
 	// Write updated record to client
-	writeOkayJSON(w, bw)
+	torque.WriteOkayJSON(w, bw)
 }
 
 // Delete removes the bodyweight record from the database.
 func (bw *Bodyweight) Delete(w http.ResponseWriter, req *http.Request) {
 	// Retrieve timestamp from request
-	timestamp, err := web.Stamp(req)
+	timestamp, err := torque.Stamp(req)
 	if err != nil {
 		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
 		return
 	}
-	if err = bw.Delete(); err != nil {
+	if err = bw.DBDelete(torque.PGConn); err != nil {
 		http.NotFound(w, req)
 		return
 	}
 	log.Printf("Deleted bodyweight @ %s", timestamp)
-	writeOkayJSON(w, bw)
+	torque.WriteOkayJSON(w, bw)
 }
 
 /*
@@ -158,7 +159,7 @@ func (bw *Bodyweight) Delete(w http.ResponseWriter, req *http.Request) {
 // ParseFlags handles command-line argument parsing.
 func (bw *Bodyweight) ParseFlags(action string, args []string) error {
 	// Define sub-flags for the bodyweight resource
-	var tsFlag timestamp
+	var tsFlag torque.TimestampFlag
 	bwFlags := flag.NewFlagSet("bwFlags", flag.ContinueOnError)
 	bwFlags.Var(&tsFlag, "timestamp", "")
 	weight := bwFlags.Float64("weight", 0.0, "")
@@ -170,13 +171,13 @@ func (bw *Bodyweight) ParseFlags(action string, args []string) error {
 
 	switch action {
 	case "create":
-		return bw.Create()
+		return bw.DBCreate(torque.PGConn)
 	case "retrieve":
-		return bw.Retrieve()
+		return bw.DBRetrieve(torque.PGConn)
 	case "update":
-		return bw.Update()
+		return bw.DBUpdate(torque.PGConn)
 	case "delete":
-		return bw.Delete()
+		return bw.DBDelete(torque.PGConn)
 	default:
 		log.Fatalf("%s is an invalid action", action)
 		return nil
@@ -193,5 +194,5 @@ func (bw *Bodyweight) ParseFlags(action string, args []string) error {
 // a variety of metrics, especially if these continue to grow.
 func (bw *Bodyweight) ClientPOST() (resp *http.Response, err error) {
 	endpoint := "/metrics/bodyweight" // For now.
-	return PostJSON(endpoint, bw)
+	return torque.PostJSON(endpoint, bw)
 }

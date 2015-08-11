@@ -16,6 +16,9 @@ import (
 
 const postgresConfigFile = "pgconf.json"
 
+// Our singleton connection to the database.
+var PGConn *sql.DB
+
 var (
 	// PsqlHost is PostgresQL hostname
 	PsqlHost = flag.String("psql-host", "", "Hostname of Postgres DB")

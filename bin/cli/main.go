@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"github.com/jad-b/torque/metrics"
 )
 
 /* cli is the command-line interface for Torque.
@@ -30,7 +32,8 @@ func handleArgs() {
 	resource, action := remainder[0], remainder[1]
 	switch resource {
 	case "bodyweight":
-		ret := &api.Bodyweight{}.ParseFlags(action, remainder[2:])
+		bw := &metrics.Bodyweight{}
+		ret := bw.ParseFlags(action, remainder[2:])
 		fmt.Printf("%s %+v\n", action, ret)
 	default:
 		fmt.Printf("%s not recognized as resource", remainder[1])

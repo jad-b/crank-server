@@ -23,25 +23,25 @@ func runServer() {
 	defer log.Fatal("Stopping server")
 
 	// Register RESTfulHandlers
-	mux.HandlerFunc("/metrics/bodyweight/",
+	mux := http.NewServeMux()
+	mux.HandleFunc("/metrics/bodyweight/",
 		torque.RouteRequest(&metrics.Bodyweight{}))
 
 	// Setup our database connection
 	pgConf := torque.LoadPGConfig()
 	pgConf = &torque.PostgresConfig{
-		User:     *PsqlUser,
-		Password: *PsqlPassword,
-		Database: *PsqlDB,
-		Host:     net.JoinHostPort(*PsqlHost, *PsqlPort),
+		User:     *torque.PsqlUser,
+		Password: *torque.PsqlPassword,
+		Database: *torque.PsqlDB,
+		Host:     net.JoinHostPort(*torque.PsqlHost, *torque.PsqlPort),
 	}
 	PGConn := torque.GetDBConnection(pgConf)
 
 	// Start the server
-	svrAddr := net.JoinHostPort(*addr, *port)
 	if *cert != "" && *key != "" {
-		http.ListenAndServerTLS(svrAddr, cert, key, mux)
+		http.ListenAndServeTLS(*addr, *cert, *key, mux)
 	} else {
-		http.ListenAndServe(svrAddr, mux)
+		http.ListenAndServe(*addr, mux)
 	}
 }
 
