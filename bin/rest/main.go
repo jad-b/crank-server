@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"log"
-	"net"
 	"net/http"
 	"os"
 
@@ -28,14 +27,8 @@ func runServer() {
 		torque.RouteRequest(&metrics.Bodyweight{}))
 
 	// Setup our database connection
-	pgConf := torque.LoadPGConfig()
-	pgConf = &torque.PostgresConfig{
-		User:     *torque.PsqlUser,
-		Password: *torque.PsqlPassword,
-		Database: *torque.PsqlDB,
-		Host:     net.JoinHostPort(*torque.PsqlHost, *torque.PsqlPort),
-	}
-	PGConn := torque.GetDBConnection(pgConf)
+	pgConf := torque.LoadPostgresConfig()
+	torque.OpenDBConnection(pgConf)
 
 	// Start the server
 	if *cert != "" && *key != "" {

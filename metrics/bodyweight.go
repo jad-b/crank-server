@@ -95,7 +95,7 @@ func (bw *Bodyweight) Post(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
 	}
-	if err = bw.DBCreate(torque.PGConn); err != nil {
+	if err = bw.DBCreate(torque.DBConn); err != nil {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
@@ -111,7 +111,7 @@ func (bw *Bodyweight) Get(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	bw.Timestamp = timestamp
-	if err = bw.DBRetrieve(torque.PGConn); err != nil {
+	if err = bw.DBRetrieve(torque.DBConn); err != nil {
 		http.NotFound(w, req)
 		return
 	}
@@ -127,7 +127,7 @@ func (bw *Bodyweight) Put(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
 	}
-	if err = bw.DBUpdate(torque.PGConn); err != nil {
+	if err = bw.DBUpdate(torque.DBConn); err != nil {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
@@ -144,7 +144,7 @@ func (bw *Bodyweight) Delete(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
 		return
 	}
-	if err = bw.DBDelete(torque.PGConn); err != nil {
+	if err = bw.DBDelete(torque.DBConn); err != nil {
 		http.NotFound(w, req)
 		return
 	}
@@ -171,13 +171,13 @@ func (bw *Bodyweight) ParseFlags(action string, args []string) error {
 
 	switch action {
 	case "create":
-		return bw.DBCreate(torque.PGConn)
+		return bw.DBCreate(torque.DBConn)
 	case "retrieve":
-		return bw.DBRetrieve(torque.PGConn)
+		return bw.DBRetrieve(torque.DBConn)
 	case "update":
-		return bw.DBUpdate(torque.PGConn)
+		return bw.DBUpdate(torque.DBConn)
 	case "delete":
-		return bw.DBDelete(torque.PGConn)
+		return bw.DBDelete(torque.DBConn)
 	default:
 		log.Fatalf("%s is an invalid action", action)
 		return nil

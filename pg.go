@@ -16,9 +16,6 @@ import (
 
 const postgresConfigFile = "pgconf.json"
 
-// Our singleton connection to the database.
-var PGConn *sql.DB
-
 var (
 	// PsqlHost is PostgresQL hostname
 	PsqlHost = flag.String("psql-host", "", "Hostname of Postgres DB")
@@ -70,24 +67,26 @@ func (conf *PostgresConfig) SafeString() string {
 	return fmt.Sprintf("postgres://%s@%s/%s", conf.User, conf.Host, conf.Database)
 }
 
-// GetDBConnection opens and returns a connection to the Postgresql DB
-func GetDBConnection(conf *PostgresConfig) *sql.DB {
-	DBConn, err := sql.Open("postgres", conf.buildPGURL())
+// OpenDBConnection opens and returns a connection to the Postgresql DB
+func OpenDBConnection(conf *PostgresConfig) *sql.DB {
+	conn, err := sql.Open("postgres", conf.buildPGURL())
 	if err != nil {
 		log.Fatalf("Can't connect to db: %s", err)
 	}
 	log.Printf("Database connection has been established; %s", conf.SafeString())
+	// Assign to global connection
+	DBConn = conn
 	return DBConn
 }
 
-// LoadPGConfig opens a PostgresConfig from a file
-func LoadPGConfig() (conf *PostgresConfig) {
+// LoadPostgresConfig opens a PostgresConfig from a file
+func LoadPostgresConfig() (conf *PostgresConfig) {
 	f, err := os.Open(postgresConfigFile)
-	if err == nil && !os.IsNotExist(err) {
-		// Read values in from json
-		decoder := json.NewDecoder(f)
-		err = decoder.Decode(conf)
+	if err != nil || os.IsNotExist(err) {
+		log.Fatal("Failed to open database configuration file")
 	}
+
+	err = json.NewDecoder(f).Decode(conf)
 	if err != nil {
 		conf = &PostgresConfig{}
 	}
