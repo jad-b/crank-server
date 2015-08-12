@@ -9,12 +9,14 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"time"
 
 	// Registers the Postgres driver with the SQL package
 	_ "github.com/lib/pq"
 )
 
-const postgresConfigFile = "pgconf.json"
+// PostgresqlTimestampFormat is a Postgresql-accepted timestamp layout
+const PostgresqlTimestampFormat = "2006-01-02 15:04:05 MST"
 
 var (
 	// PsqlHost is PostgresQL hostname
@@ -27,16 +29,18 @@ var (
 	PsqlPassword = flag.String("psql-password", "", "Postgresql password")
 	// PsqlDB is the Postgresql databse name
 	PsqlDB = flag.String("psql-db", "", "Postgresql DB")
+	// PsqlConf is a filepath to a configuration file
+	PsqlConf = flag.String("psql-conf", "pgconf.json", "Configuration file for DB connection")
 	// DBConn represents an open connection to a Postgres DB
 	DBConn *sql.DB
 )
 
-// DBResource defines an object which implements basic data operations
-type DBResource interface {
-	Create() error
-	Retrieve() error
-	Update() error
-	Delete() error
+// DBActor defines an object which implements basic data operations
+type DBActor interface {
+	Create(*sql.DB) error
+	Retrieve(*sql.DB) error
+	Update(*sql.DB) error
+	Delete(*sql.DB) error
 }
 
 // PostgresConfig is the minimal config needed to connect to a Postgres database.
@@ -81,15 +85,18 @@ func OpenDBConnection(conf *PostgresConfig) *sql.DB {
 
 // LoadPostgresConfig opens a PostgresConfig from a file
 func LoadPostgresConfig() (conf *PostgresConfig) {
-	f, err := os.Open(postgresConfigFile)
+	conf = &PostgresConfig{} // Use a blank configuration
+	f, err := os.Open(*PsqlConf)
 	if err != nil || os.IsNotExist(err) {
-		log.Fatal("Failed to open database configuration file")
+		log.Fatal("No configuration file found.")
+	} else {
+		err = json.NewDecoder(f).Decode(conf)
+		if err != nil {
+			// Let's not kid our users and act like the file was OK
+			log.Fatalf("Failed to read %s; %s", *PsqlConf, err)
+		}
 	}
 
-	err = json.NewDecoder(f).Decode(conf)
-	if err != nil {
-		conf = &PostgresConfig{}
-	}
 	// Overwrite config file with command-line variables
 	if *PsqlUser != "" {
 		conf.User = *PsqlUser
@@ -103,5 +110,10 @@ func LoadPostgresConfig() (conf *PostgresConfig) {
 	if *PsqlDB != "" {
 		conf.Database = *PsqlDB
 	}
-	return
+	return conf
+}
+
+// ToPsqlTimestamp formats a time.Time into a Postgresql-acceptable string.
+func ToPsqlTimestamp(ts time.Time) string {
+	return ts.Format(PostgresqlTimestampFormat)
 }

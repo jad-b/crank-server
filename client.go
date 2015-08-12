@@ -11,10 +11,10 @@ import (
 // It should probably take a variable set of arguments, or a struct defining
 // the set of possible options. But that's next, not now.
 type RESTfulClient interface {
-	Create(serverURL string) *http.Response
-	Retrieve(serverURL string) *http.Response
-	Update(serverURL string) *http.Response
-	Delete(serverURL string) *http.Response
+	HTTPPost(serverURL string) (*http.Response, error)
+	HTTPGet(serverURL string) (*http.Response, error)
+	HTTPPut(serverURL string) (*http.Response, error)
+	HTTPDelete(serverURL string) (*http.Response, error)
 }
 
 // PostJSON is a convenience wrapper for common POST functionality. This

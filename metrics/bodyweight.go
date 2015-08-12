@@ -10,18 +10,41 @@ import (
 	"github.com/jad-b/torque"
 )
 
+// BodyweightSQL is the SQL required to create the Bodyweight table.
+const BodyweightSQL = `
+CREATE TABLE metrics.bodyweight (
+  "timestamp" timestamp(0) with time zone NOT NULL UNIQUE,
+  weight numeric(5,2) NOT NULL CHECK (weight < 1000),
+  comment text
+);
+`
+
 // Bodyweight is a timestamped bodyweight record, with optional comment.
-//
-// SQL:
-// CREATE TABLE bodyweight (
-//	 "timestamp" timestamp(0) with time zone NOT NULL UNIQUE,
-//	 weight numeric(5,2) NOT NULL CHECK (weight < 1000),
-//	 comment text
-// );
 type Bodyweight struct {
 	Timestamp time.Time `json:"timestamp"`
 	Weight    float64   `json:"weight"`
 	Comment   string    `json:"comment"`
+}
+
+/*
+	CommandLineActor
+*/
+
+// ParseFlags parses command-line flags related to Bodyweight and loads them
+// into itself.
+func (bw *Bodyweight) ParseFlags(action string, args []string) {
+	// Define sub-flags for the bodyweight resource
+	var tsFlag torque.TimestampFlag
+	bwFlags := flag.NewFlagSet("bwFlags", flag.ContinueOnError)
+	bwFlags.Var(&tsFlag, "timestamp", "")
+
+	bwFlags.Float64Var(&bw.Weight, "weight", 0.0, "")
+	bwFlags.StringVar(&bw.Comment, "comment", "", "")
+
+	// Parse the given flags
+	bwFlags.Parse(args)
+	// Assign our leftover timestamp
+	bw.Timestamp = time.Time(tsFlag)
 }
 
 /*
@@ -46,8 +69,7 @@ func (bw *Bodyweight) Retrieve(conn *sql.DB) error {
 	err := conn.QueryRow(`
 	SELECT (timestamp, weight, comment)
 	FROM metrics.bodyweight
-	WHERE timestamp=$1`,
-		bw.Timestamp).Scan(bw)
+	WHERE timestamp=$1`, bw.Timestamp).Scan(bw)
 	if err != nil {
 		log.Printf("Problem reading from database: %s", err.Error())
 		return err
@@ -153,46 +175,29 @@ func (bw *Bodyweight) HandleDelete(w http.ResponseWriter, req *http.Request) {
 }
 
 /*
-	FlagParser
-*/
-
-// ParseFlags handles command-line argument parsing.
-func (bw *Bodyweight) ParseFlags(action string, args []string) error {
-	// Define sub-flags for the bodyweight resource
-	var tsFlag torque.TimestampFlag
-	bwFlags := flag.NewFlagSet("bwFlags", flag.ContinueOnError)
-	bwFlags.Var(&tsFlag, "timestamp", "")
-	weight := bwFlags.Float64("weight", 0.0, "")
-	comment := bwFlags.String("comment", "", "")
-
-	// Parse the given flags
-	bwFlags.Parse(args)
-	bw = &Bodyweight{time.Time(tsFlag), *weight, *comment}
-
-	switch action {
-	case "create":
-		return bw.Create(torque.DBConn)
-	case "retrieve":
-		return bw.Retrieve(torque.DBConn)
-	case "update":
-		return bw.Update(torque.DBConn)
-	case "delete":
-		return bw.Delete(torque.DBConn)
-	default:
-		log.Fatalf("%s is an invalid action", action)
-		return nil
-	}
-}
-
-/*
 	RESTfulClient
 */
 
-// ClientPOST creates a new bodyweight record on the REST API server.
+// HTTPPost creates a new bodyweight record on the REST API server.
 //
 // It probably makes more sense to have a generic 'metrics/' endpoint that accepts
 // a variety of metrics, especially if these continue to grow.
-func (bw *Bodyweight) ClientPOST() (resp *http.Response, err error) {
+func (bw *Bodyweight) HTTPPost(serverURL string) (resp *http.Response, err error) {
 	endpoint := "/metrics/bodyweight" // For now.
 	return torque.PostJSON(endpoint, bw)
+}
+
+// HTTPGet requests a bodyweight record from the server.
+func (bw *Bodyweight) HTTPGet(serverURL string) (resp *http.Response, err error) {
+	return nil, nil
+}
+
+// HTTPPut updates the server with the current state of the Bodyweight record.
+func (bw *Bodyweight) HTTPPut(serverURL string) (resp *http.Response, err error) {
+	return nil, nil
+}
+
+// HTTPDelete deletes the matching Bodyweight record on the server.
+func (bw *Bodyweight) HTTPDelete(serverURL string) (resp *http.Response, err error) {
+	return nil, nil
 }

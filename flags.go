@@ -1,10 +1,50 @@
 package torque
 
-import "time"
+import (
+	"database/sql"
+	"fmt"
+	"net/http"
+	"time"
+)
 
-// FlagParser is capable of parsing commmand-line arugments
-type FlagParser interface {
-	ParseFlags(action string, args []string) error
+// CommandLineActor is capable of parsing and acting upon commmand-line arguments
+type CommandLineActor interface {
+	DBActor
+	RESTfulClient
+	ParseFlags(action string, args []string)
+}
+
+// ActOnDB requests the actor perform it's correct method against the database.
+func ActOnDB(actor DBActor, action string, conn *sql.DB) error {
+	switch action {
+	case "create":
+		return actor.Create(conn)
+	case "retrieve":
+		return actor.Retrieve(conn)
+	case "update":
+		return actor.Update(conn)
+	case "delete":
+		return actor.Delete(conn)
+	default:
+		return fmt.Errorf("%s is an invalid action", action)
+	}
+}
+
+// ActOnWebServer requests the actor perform it's correct method against a web
+// server.
+func ActOnWebServer(actor RESTfulClient, action, serverURL string) (*http.Response, error) {
+	switch action {
+	case "create":
+		return actor.HTTPPost(serverURL)
+	case "retrieve":
+		return actor.HTTPGet(serverURL)
+	case "update":
+		return actor.HTTPPut(serverURL)
+	case "delete":
+		return actor.HTTPDelete(serverURL)
+	default:
+		return nil, fmt.Errorf("%s is an invalid action", action)
+	}
 }
 
 // TimestampFlag is a custom command-line flag for accepting timestamps
