@@ -2,7 +2,6 @@ package users
 
 import (
 	"database/sql"
-	"flag"
 	"log"
 	"net/http"
 	"time"
@@ -37,7 +36,7 @@ type User struct {
 	Timestamp    time.Time `json:"timestamp"`
 }
 
-// Create a new User instance from the provided username
+// NewUser creates a new User instance from the provided username
 func NewUser(username string) *User {
 	return &User{Username: username}
 }
@@ -46,7 +45,7 @@ func NewUser(username string) *User {
 	DBActor
 */
 
-// DBCreate inserts a new User into the database
+// Create inserts a new User into the database
 func (u *User) Create(conn *sql.DB) error {
 	_, err := conn.Exec(`
 	INSERT INTO torque.users (id, username, first_name, last_name, email, enabled, password_hash, password_salt, timestamp)
@@ -87,7 +86,7 @@ func (u *User) Update(conn *sql.DB) error {
 	return nil
 }
 
-// DBDelete removes a User record from the database. In most cases it will
+// Delete removes a User record from the database. In most cases it will
 // probably be best practice to simply flag a user as disabled via a PUT, but
 // we do also need to expose this ability.
 func (u *User) Delete(conn *sql.DB) error {
