@@ -19,14 +19,15 @@ PSQL_VERSION=9.4.4
 dump_db(){
     docker run \
         --rm \
-        -v $(pwd):/backup
+        -it \
+        -v $(pwd):/backup \
         --link "$1":db \
         "postgres:$PSQL_VERSION" \
-        sh -c 'pg_dump torque --create > /backup/torque.template.pg'
+        sh -c 'pg_dump -h db -U torque -W -d torque --create > /backup/torque.template.pg'
 }
 
 case $1 in
     savedb)
-        dump_db
+        dump_db "$2"
         ;;
 esac

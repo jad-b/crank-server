@@ -1,10 +1,12 @@
+# jdb - I vote we prefix common ports with '1' to avoid common conflicts with
+# other projects. For instance, postgres goes from 5432 => 15432.
 db:
   image: postgres:9.4.4
   environment:
     POSTGRES_USER: torque
     POSTGRES_PASSWORD: torque
   ports:
-    - "127.0.0.1:5432:5432"
+    - "127.0.0.1:15432:5432"
   volumes:
     - pg_data:/var/lib/postgresql/data
 
