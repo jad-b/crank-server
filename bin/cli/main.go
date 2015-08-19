@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -18,6 +20,10 @@ var (
 	}
 	addr    = flag.String("addr", "", "Host:port of Torque server")
 	verbose = flag.Bool("v", false, "Toggle verbose output")
+	// The error that killed the program. Having this as a script-global allows
+	// us to set an error wherever, recover generically with a 'defer' in
+	// main(), and still output something meaningful.
+	terminalError error
 )
 
 /* cli is the command-line interface for Torque.
@@ -33,7 +39,8 @@ func main() {
 	// Handle all errors generically
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("%s is an invalid call of torque", os.Args)
+			fmt.Printf("%s is an invalid call of torque: %s\n", os.Args, terminalError)
+			flag.Usage()
 		}
 	}()
 
@@ -60,18 +67,18 @@ func handleArgs() {
 	lenRemainder := len(remainder)
 	// log.Printf("Remaining args: %s", remainder)
 	if lenRemainder < 1 {
-		log.Panic("No resource specified")
+		terminalError = errors.New("No resource specified")
 	} else if lenRemainder < 2 {
-		log.Panic("No action specified")
+		terminalError = errors.New("No action specified")
 	} else if lenRemainder < 3 {
-		log.Panic("No data was provided")
+		terminalError = errors.New("No data was provided")
 	}
 
 	// Delegate remaining arg parsing to the identified resource
 	resource, action := remainder[0], remainder[1]
 	r, ok := registry[resource]
 	if !ok {
-		log.Fatalf("%s not recognized as resource", remainder[1])
+		terminalError = fmt.Errorf("%s not recognized as resource", remainder[1])
 	}
 	// Resource located; have it parse the remaining flags.
 	r.ParseFlags(action, remainder[2:])
@@ -89,6 +96,6 @@ func handleArgs() {
 		err = torque.ActOnDB(r, action, torque.DBConn)
 	}
 	if err != nil {
-		log.Panic(err)
+		terminalError = err
 	}
 }
