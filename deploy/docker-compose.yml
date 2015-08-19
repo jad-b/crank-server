@@ -1,8 +1,8 @@
 db:
   image: postgres:9.4.4
   environment:
-    POSTGRES_USER: crank-api
-    POSTGRES_PASSWORD: cranky
+    POSTGRES_USER: torque
+    POSTGRES_PASSWORD: torque
   ports:
     - "127.0.0.1:5432:5432"
   volumes:
