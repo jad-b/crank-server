@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import argparse
 import logging
 import yaml
@@ -72,7 +73,7 @@ class SwaggerSpec:
 
     def load_includes(self):
         """Load include statements and register them into this namespace"""
-        includes = extract_includes(self.spec)
+        includes = extract_includes(self._spec)
         for include in includes:
             self._include(include)
 
