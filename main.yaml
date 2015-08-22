@@ -20,7 +20,7 @@ parameters:
     in: query
     required: false
     description: The page of a paginated result to retrieve
-paths: []
+paths: {}
 definitions:
   Error:
     properties:
