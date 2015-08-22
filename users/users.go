@@ -25,15 +25,13 @@ import (
 //	 "timestamp" timestamp(0) with time zone NOT NULL UNIQUE,
 // );
 type User struct {
-	ID           int    `json:"id"`
-	Username     string `json:"username"`
-	FirstName    string `json:"first_name"`
-	LastName     string `json:"last_name"`
-	Email        string `json:"email"`
-	Enabled      bool   `json:"enabled"`
-	PasswordHash string
-	PasswordSalt string
-	Timestamp    time.Time `json:"timestamp"`
+	ID        int       `json:"id"`
+	Username  string    `json:"username"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	Email     string    `json:"email"`
+	Enabled   bool      `json:"enabled"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // NewUser creates a new User instance from the provided username
