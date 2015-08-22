@@ -1,0 +1,74 @@
+---
+tags:
+  - metrics
+  - bodyweight
+paths:
+  /metrics/bodyweight:
+    get:
+      summary: Get a Bodyweight measurement resource
+      description: Retrieve a specified bodyweight resource
+      responses:
+        200:
+          description: A Bodyweight resoure
+          schema:
+            $ref: '#/definitions/Bodyweight'
+        404:
+          description: No such Bodyweight
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
+    put:
+      summary: Update an exiting Bodyweight measurement resource
+      description: Update a specified bodyweight resource
+      responses:
+        200:
+          description: A Bodyweight resoure
+          schema:
+            $ref: '#/definitions/Bodyweight'
+        404:
+          description: No such Bodyweight
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
+    post:
+      summary: Create a new Bodyweight measurement resource
+      description: Create a new bodyweight resource
+      responses:
+        200:
+          description: A Bodyweight resoure
+          schema:
+            $ref: '#/definitions/Bodyweight'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
+    delete:
+      summary: Delete an exiting Bodyweight measurement resource
+      description: Delete a specified bodyweight resource
+      responses:
+        200:
+          description: Nothing
+          schema:
+            $ref: '#/definitions/Bodyweight'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
+definitions:
+  Bodyweight:
+    properties:
+      timestamp:
+        type: string
+        description: The time that this measurement was taken
+      weight:
+        type: float64
+        description: The bodyweight measured
+      comment:
+        type: string
+        description: An optional comment associated with this bodyweight measurement
