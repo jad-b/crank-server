@@ -29,6 +29,10 @@ clean:
 	# Delete built binaries
 	rm -rf $(BUILD_DIR)
 
+swagger:
+	# Generate full Swagger API spec output file
+	./swaggregate.py -m main.yaml -o swagger.yaml
+
 .PHONY: clean all
 .PHONY: $(BINARIES)
 .PHONY: $(APPS)

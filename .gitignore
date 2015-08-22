@@ -55,3 +55,6 @@ target/
 
 # PostgresQL
 pg_data/
+
+# Compiled Swagger Spec
+swagger.yaml
