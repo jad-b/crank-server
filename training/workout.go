@@ -24,24 +24,6 @@ type Exercise struct {
 	Comment string `json:"comment"`
 }
 
-/*
-MUSCLE_GROUPS = (('Q', 'Quadriceps'),
-                 ('LB', 'Lower Back'),
-                 ('B', 'Biceps'),
-                 ('C', 'Chest'),
-                 ('A', 'Abdominals'),
-                 ('H', 'Hamstrings'),
-                 ('T', 'Triceps'),
-                 ('TR', 'Traps'),
-                 ('M', 'Middle Back'),
-                 ('L', 'Lats'),
-                 ('N', 'Neck'),
-                 ('F', 'Forearms'),
-                 ('G', 'Glutes'),
-                 ('S', 'Shoulders'),
-                 ('CA', 'Calves'))
-*/
-
 // Collection of valid values for an assortment of ExerciseMeta fields. Note
 // that these can not be marked as constant, because Array's are mutable.
 // Because of this avoid, at all costs, ever writing to any of these Arrays
