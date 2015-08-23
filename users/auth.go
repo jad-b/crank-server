@@ -9,7 +9,7 @@ import (
 	"github.com/jad-b/torque"
 )
 
-// PII is a struct encapsulating a user's sensitive data. This has been
+// UserSecrets is a struct encapsulating a user's sensitive data. This has been
 // extracted from the user tables, in order to isolate sensitive data from
 // non-sensitive data so we can reduce our risk of doing something stupid down
 // the road.
@@ -25,7 +25,7 @@ import (
 //	 "timestamp" timestamp(0) with time zone NOT NULL UNIQUE,
 //   "token_last_seen" timestamp(0) with time zone NOT NULL UNIQUE,
 // );
-type PII struct {
+type UserSecrets struct {
 	ID             int `json:"id"`
 	UserID         int `json:"user_id"`
 	PasswordHash   string
@@ -36,9 +36,9 @@ type PII struct {
 	TokenLastSeen  time.Time `json:"token_last_seen"`
 }
 
-// Create a new PII instance
-func NewPII(u *User, passwordHash string) *PII {
-	return &PII{
+// Create a new UserSecrets instance
+func NewUserSecrets(u *User, passwordHash string) *UserSecrets {
+	return &UserSecrets{
 		UserID:         u.ID,
 		PasswordHash:   passwordHash,
 		PasswordSalt:   NewSalt(DefaultSaltLength),
@@ -47,8 +47,8 @@ func NewPII(u *User, passwordHash string) *PII {
 	}
 }
 
-func (p *PII) Validate(password string) bool {}
-func GenerateHash(password string) string    {}
+func (p *UserSecrets) Validate(password string) bool {}
+func GenerateHash(password string) string            {}
 
 const (
 	// The alphabet constant is used to expose all of the valid characters that
