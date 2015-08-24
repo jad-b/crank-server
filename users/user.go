@@ -1,38 +1,47 @@
 package users
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/jad-b/torque"
 )
 
 // UserAuthSQL is SQL for creating the auth.UserAuths table
-const UserAuthSQL = `
+const (
+	UserAuthSQL = `
 CREATE TABLE auth.UserAuths(
-  "id" numeric(5,2) NOT NULL
-  "user_id" text NOT NULL UNIQUE
-  "password_hash" text NOT NULL
-  "password_salt" text NOT NULL
-  "iteration_count" numeric(5,2) NOT NULL
-  "current_token" text NOT NULL
-  "timestamp" timestamp(0) with time zone NOT NULL UNIQUE,
-  "token_last_seen" timestamp(0) with time zone NOT NULL UNIQUE,
+  "id" integer PRIMARY KEY,
+  "username" text NOT NULL UNIQUE,
+  "account_created" timestamp(0) with time zone NOT NULL,
+  "enabled" boolean DEFAULT TRUE,
+  "superuser" boolean DEFAULT FALSE,
+  "password_hash" text NOT NULL,
+  "password_salt" text NOT NULL,
+  "cost" integer NOT NULL,
+  "current_token" text,
+  "token_created" timestamp(0) with time zone,
+  "token_last_used" timestamp(0) with time zone
 );`
+)
 
 // UserAuth holds the auth token data mapped to a UserAuth ID.
-// TODO It also holds some data, like Enabled, AccountCreation, that might be better
-// served in a UserMeta table, but I left here for simplicity's sake. Also, I
+// TODO It also holds some data, like Enabled, AccountCreated, that might be better
+// served in a UserMeta table, but I left it here for simplicity's sake. Also, I
 // hear JOINs are expensive.
 type UserAuth struct {
-	// Primary key
-	ID int `json:"id"`
-	// Because it doesn't live in UserPII
-	Username        string    `json:"username"`
-	AccountCreation time.Time `json:"account_creation"`
-	Enabled         bool      `json:"enabled"`
+	// Primary key. Links user tables together
+	ID `json:"id"`
+	// Keep username close to passwordHash for authentication calls
+	Username       string    `json:"username"`
+	AccountCreated time.Time `json:"account_created"`
+	Enabled        bool      `json:"enabled"`
+	Superuser      bool      `json:"superuser"`
 	// Salt used to hash the password
 	PasswordSalt string
 	// Type of hash used
@@ -40,9 +49,8 @@ type UserAuth struct {
 	// Power-of-two times we iterated over the stored password when hashing
 	Cost int
 	// Currently active auth token
-	CurrentToken string `json:"token"`
-	// What time does this apply to? Token creation?
-	Timestamp time.Time `json:"timestamp"`
+	CurrentToken string    `json:"token"`
+	TokenCreated time.Time `json:"timestamp"`
 	// Last time the token was used in an API request
 	TokenLastUsed time.Time `json:"token_last_used"`
 }
@@ -52,7 +60,7 @@ func NewUserAuth() *UserAuth {
 	return &UserAuth{
 		PasswordSalt:   NewSalt(DefaultSaltLength),
 		IterationCount: DefaultIterationCount,
-		Timestamp:      time.Now(),
+		AccountCreated: time.Now(),
 	}
 }
 
@@ -74,19 +82,33 @@ func (u *UserAuth) ValidateAuthToken(token string) bool {
 	DBActor
 */
 
-// Create inserts a new UserAuth into the database
+// Create inserts a new UserAuth row into the database
 func (u *UserAuth) Create(conn *sql.DB) error {
 	_, err := conn.Exec(`
 	INSERT INTO auth.UserAuth (
 		id,
 		username,
-		account_creation,
+		account_created,
 		enabled,
+		superuser,
 		password_hash,
 		password_salt,
-		timestamp)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		u.ID, u.Username, u.FirstName, u.LastName, u.Email, u.Enabled, u.PasswordHash, u.PasswordSalt, time.Now())
+		cost,
+		current_token,
+		token_created,
+		token_last_used)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+		u.ID,
+		u.Username,
+		u.AccountCreated,
+		u.Enabled,
+		u.Superuser,
+		u.PasswordHash,
+		u.PasswordSalt,
+		u.Cost,
+		u.CurrentToken,
+		u.TokenCreated,
+		u.TokenLastUsed)
 	if err != nil {
 		return err
 	}
@@ -99,11 +121,15 @@ func (u *UserAuth) Retrieve(conn *sql.DB) error {
 	SELECT (
 		id,
 		username,
-		account_creation,
+		account_created,
 		enabled,
+		superuser,
 		password_hash,
 		password_salt,
-		timestamp)
+		cost,
+		current_token,
+		token_created,
+		token_last_used)
 	FROM auth.UserAuth
 	WHERE username=$1`,
 		u.Username).Scan(u)
@@ -114,12 +140,32 @@ func (u *UserAuth) Retrieve(conn *sql.DB) error {
 }
 
 // Update a user entry in the database
+// TODO(jdb) Might be a bad idea to override everything - kind of implies you'l
+// want to RETRIEVE the existing record, apply changes, then UPDATE the row.
+// Or maybe we should implement PATCH for partial updates.
 func (u *UserAuth) Update(conn *sql.DB) error {
 	_, err := conn.Exec(`
 	UPDATE auth.UserAuth
-	SET first_name='$2', last_name='$3', email='$4', enabled=$5, timestamp=$6
+	SET account_created='$2',
+		enabled='$3',
+		superuser='$4',
+		password_hash='$5',
+		password_salt='$6',
+		cost='$7',
+		current_token='$8',
+		token_created='$9',
+		token_last_used='$10')
 	WHERE username=$1`,
-		u.Username, u.Enabled, time.Now())
+		u.Username,
+		u.AccountCreated,
+		u.Enabled,
+		u.Superuser,
+		u.PasswordHash,
+		u.PasswordSalt,
+		u.Cost,
+		u.CurrentToken,
+		u.TokenCreated,
+		u.TokenLastUsed)
 	if err != nil {
 		return err
 	}
@@ -212,21 +258,38 @@ func (u *UserAuth) HandleDelete(w http.ResponseWriter, req *http.Request) {
 
 // HTTPPost creates a new user record on the REST API server.
 func (u *UserAuth) HTTPPost(serverURL string) (resp *http.Response, err error) {
-	endpoint := "/users"
-	return torque.PostJSON(endpoint, u)
+	return torque.PostJSON(torque.BuildResourcePath(serverURL, u), u)
 }
 
 // HTTPGet requests a user record from the server.
 func (u *UserAuth) HTTPGet(serverURL string) (resp *http.Response, err error) {
-	return nil, nil
+	return http.Get(torque.BuildResourcePath(serverURL, u))
 }
 
 // HTTPPut updates the server with the current state of the UserAuth record.
 func (u *UserAuth) HTTPPut(serverURL string) (resp *http.Response, err error) {
-	return nil, nil
+	payload, err := json.Marshal(u)
+	if err != nil {
+		return nil, err
+	}
+	path := torque.BuildResourcePath(serverURL, u)
+	req := http.NewJSONRequest("PUT", path, bytes.NewBuffer(payload))
+	return http.Do(req)
 }
 
 // HTTPDelete deletes the matching user record on the server.
 func (u *UserAuth) HTTPDelete(serverURL string) (resp *http.Response, err error) {
-	return nil, nil
+	path := torque.BuildResourcePath(serverURL, u)
+	req := http.NewRequest("DELETE", path, nil)
+	return http.Do(req)
+}
+
+/*
+	RESTfulResource
+*/
+
+// GetResourceName returns the name UserAuth wishes to be referred to by in the
+// URL
+func (u *UserAuth) GetResourceName() string {
+	return strings.Join([]string{"users", u.Username})
 }

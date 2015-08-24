@@ -5,10 +5,16 @@ import (
 	"net/http"
 )
 
+// A RESTfulResource knows how to represent itself in a RESTful API.
+type RESTfulResource interface {
+	GetResourceName() string
+}
+
 // The RESTfulHandler interface models a resource that supports RESTful
 // interactions. It supports GET, POST, PUT, and DELETE operations, as well as
 // the ServeHTTP method required for HTTP handlers.
 type RESTfulHandler interface {
+	RESTfulResource
 	HandleGet(http.ResponseWriter, *http.Request)
 	HandlePost(http.ResponseWriter, *http.Request)
 	HandlePut(http.ResponseWriter, *http.Request)

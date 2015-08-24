@@ -3,16 +3,25 @@ package torque
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
 )
 
+// NopCloser satisfies the ReadCloser interface
+type NopCloser struct{ io.Reader }
+
+// Close does nothing, but satifies the Closer interface
+func (nc NopCloser) Close() error { return nil }
+
 // RequestToBuffer writes the HTTP request to a buffer for printing
 func RequestToBuffer(req *http.Request) *bytes.Buffer {
 	var buf *bytes.Buffer
 	req.Write(buf)
+	// Reset Request Body, since it's an io.ReadCloser that's been read
+	req.Body = NopCloser{buf}
 	return buf
 }
 
