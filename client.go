@@ -28,14 +28,14 @@ type API struct {
 }
 
 // NewTorqueAPI instantiates a new API connection from a URL string.
-func NewTorqueAPI(serverURL string) {
+func NewTorqueAPI(serverURL string) API {
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		// No point in continuing if we can't connect to the server
 		log.Fatal(err)
 	}
 	// TODO(jdb) Set up HTTPS certs
-	return API{ServerURL: u}
+	return API{ServerURL: *u}
 }
 
 // PostJSON is a convenience wrapper for common POST functionality. This

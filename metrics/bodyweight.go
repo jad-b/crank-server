@@ -178,34 +178,6 @@ func (bw *Bodyweight) HandleDelete(w http.ResponseWriter, req *http.Request) {
 }
 
 /*
-	RESTfulClient
-*/
-
-// HTTPPost creates a new bodyweight record on the REST API server.
-//
-// It probably makes more sense to have a generic 'metrics/' endpoint that accepts
-// a variety of metrics, especially if these continue to grow.
-func (bw *Bodyweight) HTTPPost(serverURL string) (resp *http.Response, err error) {
-	endpoint := "/metrics/bodyweight" // For now.
-	return torque.PostJSON(endpoint, bw)
-}
-
-// HTTPGet requests a bodyweight record from the server.
-func (bw *Bodyweight) HTTPGet(serverURL string) (resp *http.Response, err error) {
-	return nil, nil
-}
-
-// HTTPPut updates the server with the current state of the Bodyweight record.
-func (bw *Bodyweight) HTTPPut(serverURL string) (resp *http.Response, err error) {
-	return nil, nil
-}
-
-// HTTPDelete deletes the matching Bodyweight record on the server.
-func (bw *Bodyweight) HTTPDelete(serverURL string) (resp *http.Response, err error) {
-	return nil, nil
-}
-
-/*
 	RESTfulResource
 */
 
