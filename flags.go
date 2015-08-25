@@ -10,7 +10,6 @@ import (
 // CommandLineActor is capable of parsing and acting upon commmand-line arguments
 type CommandLineActor interface {
 	DBActor
-	RESTfulClient
 	ParseFlags(action string, args []string)
 }
 
@@ -32,16 +31,16 @@ func ActOnDB(actor DBActor, action string, conn *sql.DB) error {
 
 // ActOnWebServer requests the actor perform it's correct method against a web
 // server.
-func ActOnWebServer(actor RESTfulClient, action, serverURL string) (*http.Response, error) {
+func ActOnWebServer(action, serverURL string) (*http.Response, error) {
 	switch action {
 	case "create":
-		return actor.HTTPPost(serverURL)
+		return nil, nil
 	case "retrieve":
-		return actor.HTTPGet(serverURL)
+		return nil, nil
 	case "update":
-		return actor.HTTPPut(serverURL)
+		return nil, nil
 	case "delete":
-		return actor.HTTPDelete(serverURL)
+		return nil, nil
 	default:
 		return nil, fmt.Errorf("%s is an invalid action", action)
 	}

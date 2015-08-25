@@ -86,7 +86,7 @@ func handleArgs() {
 	var err error
 	if web {
 		var resp *http.Response
-		resp, err = torque.ActOnWebServer(r, action, *addr)
+		resp, err = torque.ActOnWebServer(action, *addr)
 		if *verbose {
 			var buf bytes.Buffer
 			resp.Write(&buf)

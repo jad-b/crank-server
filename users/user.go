@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/jad-b/torque"
@@ -37,7 +40,7 @@ CREATE TABLE auth.UserAuths(
 // hear JOINs are expensive.
 type UserAuth struct {
 	// Primary key. Links user tables together
-	ID `json:"id"`
+	ID int `json:"id"`
 	// Keep username close to passwordHash for authentication calls
 	Username       string    `json:"username"`
 	AccountCreated time.Time `json:"account_created"`
@@ -78,18 +81,30 @@ func Authenticate(serverURL, username, password string) UserAuth {
 	}
 	// Parse the response into a User object
 	user := &UserAuth{}
-	err := json.Unmarshal(resp.Body, user)
+	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal("Failed to read authentication response")
+		log.Fatal("Failed to read authentication response body")
+	}
+	err = json.Unmarshal(respBody, user)
+	if err != nil {
+		log.Fatal("Failed to unmarshal authentication response body")
 	}
 	return *user
+}
+
+// IsAuthenticated returns whether or not the User is authenticated. This
+// method *does not* touch the server, so it relies upon available client-side
+// data.
+func (u *UserAuth) IsAuthenticated() bool {
+	return u.CurrentToken != "" &&
+		time.Since(u.TokenCreated) < AuthTokenLifespan
 }
 
 // NewUserAuth creates a new UserAuth instance with some defaults in place.
 func NewUserAuth() *UserAuth {
 	return &UserAuth{
 		PasswordSalt:   NewSalt(DefaultSaltLength),
-		IterationCount: DefaultIterationCount,
+		Cost:           DefaultBcryptCost,
 		AccountCreated: time.Now(),
 	}
 }
@@ -98,14 +113,14 @@ func NewUserAuth() *UserAuth {
 func (u *UserAuth) ValidatePassword(password string) bool {
 	// Hash the password
 	hashed, _, _ := DefaultHash(password)
-	u.Retrieve() // Lookup from the database
+	u.Retrieve(torque.DBConn) // Lookup from the database
 	return hashed == u.PasswordHash
 }
 
 // ValidateAuthToken verifies the given auth token is valid for the user.
 func (u *UserAuth) ValidateAuthToken(token string) bool {
-	u.Retrieve() // Lookup from the database
-	return u.Token == token
+	u.Retrieve(torque.DBConn) // Lookup from the database
+	return token == u.CurrentToken
 }
 
 /*
@@ -210,8 +225,9 @@ func (u *UserAuth) Delete(conn *sql.DB) error {
 	DELETE FROM auth.UserAuth
 	WHERE username=$1`, u.Username).Scan(u)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	return nil
 }
 
 /*
@@ -220,7 +236,13 @@ func (u *UserAuth) Delete(conn *sql.DB) error {
 
 // HandlePost creates a new UserAuth record.
 func (u *UserAuth) HandlePost(w http.ResponseWriter, req *http.Request) {
-	err := torque.ReadBodyTo(w, req, u)
+	userID, err := parseUserID(req.URL)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	u.ID = userID
+	err = torque.ReadBodyTo(w, req, u)
 	if err != nil {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
@@ -235,24 +257,29 @@ func (u *UserAuth) HandlePost(w http.ResponseWriter, req *http.Request) {
 
 // HandleGet returns the specified UserAuth record
 func (u *UserAuth) HandleGet(w http.ResponseWriter, req *http.Request) {
-	timestamp, err := torque.Stamp(req)
+	userID, err := parseUserID(req.URL)
 	if err != nil {
-		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	u.Timestamp = timestamp
+	u.ID = userID
 	if err = u.Retrieve(torque.DBConn); err != nil {
 		http.NotFound(w, req)
 		return
 	}
-	log.Printf("Retrieved %+v", u)
 	torque.WriteOkayJSON(w, u)
 }
 
 // HandlePut updates a UserAuth resource.
 func (u *UserAuth) HandlePut(w http.ResponseWriter, req *http.Request) {
+	userID, err := parseUserID(req.URL)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	u.ID = userID
 	// Parse body of PUT request into a UserAuth struct
-	err := torque.ReadBodyTo(w, req, u)
+	err = torque.ReadBodyTo(w, req, u)
 	if err != nil {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
@@ -261,57 +288,37 @@ func (u *UserAuth) HandlePut(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("Updated %+v", u)
 	// Write updated record to client
 	torque.WriteOkayJSON(w, u)
 }
 
 // HandleDelete removes a user record from the database.
 func (u *UserAuth) HandleDelete(w http.ResponseWriter, req *http.Request) {
-	// Retrieve timestamp from request
-	timestamp, err := torque.Stamp(req)
+	userID, err := parseUserID(req.URL)
 	if err != nil {
-		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	u.ID = userID
 	if err = u.Delete(torque.DBConn); err != nil {
 		http.NotFound(w, req)
 		return
 	}
-	log.Printf("Deleted user %s @ %s", u.Username, timestamp)
 	torque.WriteOkayJSON(w, u)
 }
 
-/*
-	RESTfulClient
-*/
-
-// HTTPPost creates a new user record on the REST API server.
-func (u *UserAuth) HTTPPost(serverURL string) (resp *http.Response, err error) {
-	return torque.PostJSON(torque.BuildResourcePath(serverURL, u), u)
-}
-
-// HTTPGet requests a user record from the server.
-func (u *UserAuth) HTTPGet(serverURL string) (resp *http.Response, err error) {
-	return http.Get(torque.BuildResourcePath(serverURL, u))
-}
-
-// HTTPPut updates the server with the current state of the UserAuth record.
-func (u *UserAuth) HTTPPut(serverURL string) (resp *http.Response, err error) {
-	payload, err := json.Marshal(u)
-	if err != nil {
-		return nil, err
+func parseUserID(earl *url.URL) (int, error) {
+	// Parse user ID from URL
+	re := regexp.MustCompile(`/users/(\d+)/?`)
+	parts := re.FindStringSubmatch(earl.Path)
+	if len(parts) < 2 {
+		return 0, fmt.Errorf("Expected /users/{user_id}/, not %s", earl.Path)
 	}
-	path := torque.BuildResourcePath(serverURL, u)
-	req := http.NewJSONRequest("PUT", path, bytes.NewBuffer(payload))
-	return http.Do(req)
-}
-
-// HTTPDelete deletes the matching user record on the server.
-func (u *UserAuth) HTTPDelete(serverURL string) (resp *http.Response, err error) {
-	path := torque.BuildResourcePath(serverURL, u)
-	req := http.NewRequest("DELETE", path, nil)
-	return http.Do(req)
+	userID, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, fmt.Errorf("%s is an invalid user ID", parts[1])
+	}
+	return userID, nil
 }
 
 /*
@@ -321,5 +328,5 @@ func (u *UserAuth) HTTPDelete(serverURL string) (resp *http.Response, err error)
 // GetResourceName returns the name UserAuth wishes to be referred to by in the
 // URL
 func (u *UserAuth) GetResourceName() string {
-	return strings.Join([]string{"users", u.Username})
+	return torque.SlashJoin("users", u.Username)
 }

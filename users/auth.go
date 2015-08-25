@@ -1,6 +1,12 @@
 package users
 
-import "math/rand"
+import (
+	"log"
+	"math/rand"
+	"time"
+
+	"golang.org/x/crypto/bcrypt"
+)
 
 const (
 	// The alphabet constant is used to expose all of the valid characters that
@@ -28,22 +34,28 @@ const (
 	DefaultBcryptCost = 12
 )
 
+var (
+	// AuthTokenLifespan is how long an AuthToken should be valid for from its
+	// creation time.
+	AuthTokenLifespan = time.Hour * 1
+)
+
 // DefaultHash applies a one-way bcrypt hash to a string.
 // It returns the resulting hash, the salt used, and the cost (power of two of
 // iterations to be performed).
 func DefaultHash(password string) (hash, salt string, cost int) {
-	s = NewSalt(DefaultSaltLength)
+	s := NewSalt(DefaultSaltLength)
 	return GenerateHash(password, s, DefaultBcryptCost), s, DefaultBcryptCost
 }
 
 // GenerateHash one-way bcrypt hashes the password.
 // TODO(jdb) Salt is currently unused
 func GenerateHash(password, salt string, cost int) string {
-	hashed, err := bcrypt.GeneratePasswordFrom(password, cost)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), cost)
 	if err != nil {
-		log.Error(err)
+		log.Panic(err)
 	}
-	return hashed
+	return string(hashed)
 }
 
 // NewSalt generates a new, random, salt of the length specified
