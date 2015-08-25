@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -53,6 +54,35 @@ type UserAuth struct {
 	TokenCreated time.Time `json:"timestamp"`
 	// Last time the token was used in an API request
 	TokenLastUsed time.Time `json:"token_last_used"`
+}
+
+// Authenticate logs the User in on the Torque Server.
+// This is a client-side call.
+// This has the side-effect of modifying the calling object's state.
+func Authenticate(serverURL, username, password string) UserAuth {
+	// Prepare the URL
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	u.Path = torque.SlashJoin(u.Path, "users", "authenticate")
+	// Prepare the JSON body
+	body, err := json.Marshal(u)
+	if err != nil {
+		log.Fatal("Failed to marshal credentials")
+	}
+	// Send the auth request
+	resp, err := http.Post(u.String(), "application/json", bytes.NewBuffer(body))
+	if err != nil {
+		log.Fatal("Failed to authenticate")
+	}
+	// Parse the response into a User object
+	user := &UserAuth{}
+	err := json.Unmarshal(resp.Body, user)
+	if err != nil {
+		log.Fatal("Failed to read authentication response")
+	}
+	return *user
 }
 
 // NewUserAuth creates a new UserAuth instance with some defaults in place.

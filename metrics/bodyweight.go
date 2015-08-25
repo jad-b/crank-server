@@ -8,16 +8,19 @@ import (
 	"time"
 
 	"github.com/jad-b/torque"
+	"github.com/jad-b/torque/users"
 )
 
-// BodyweightSQL is the SQL required to create the Bodyweight table.
-const BodyweightSQL = `
+const (
+	// BodyweightSQL is the SQL required to create the Bodyweight table.
+	BodyweightSQL = `
 CREATE TABLE metrics.bodyweight (
   "timestamp" timestamp(0) with time zone NOT NULL UNIQUE,
   weight numeric(5,2) NOT NULL CHECK (weight < 1000),
   comment text
 );
 `
+)
 
 // Bodyweight is a timestamped bodyweight record, with optional comment.
 type Bodyweight struct {
@@ -201,3 +204,18 @@ func (bw *Bodyweight) HTTPPut(serverURL string) (resp *http.Response, err error)
 func (bw *Bodyweight) HTTPDelete(serverURL string) (resp *http.Response, err error) {
 	return nil, nil
 }
+
+/*
+	RESTfulResource
+*/
+
+// GetResourceName returns the name the resource wishes to be refered to by in
+// the URL
+func (bw *Bodyweight) GetResourceName() string {
+	// user := GetUserFromRequest
+	user := users.NewUserAuth()
+	return torque.SlashJoin(user.Username, "bodyweight")
+}
+
+// RegisterURL sets up the handler for the Bodyweight reosurce on the server.
+func (bw *Bodyweight) RegisterURL() error { return nil }

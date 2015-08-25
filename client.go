@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,6 +20,22 @@ type RESTfulClient interface {
 	HTTPGet(serverURL string) (*http.Response, error)
 	HTTPPut(serverURL string) (*http.Response, error)
 	HTTPDelete(serverURL string) (*http.Response, error)
+}
+
+// API is a client-side representation of a Torque server connection.
+type API struct {
+	ServerURL url.URL `json:"server_url"`
+}
+
+// NewTorqueAPI instantiates a new API connection from a URL string.
+func NewTorqueAPI(serverURL string) {
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		// No point in continuing if we can't connect to the server
+		log.Fatal(err)
+	}
+	// TODO(jdb) Set up HTTPS certs
+	return API{ServerURL: u}
 }
 
 // PostJSON is a convenience wrapper for common POST functionality. This
