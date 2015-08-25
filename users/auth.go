@@ -1,54 +1,6 @@
 package users
 
-import (
-	"database/sql"
-	"log"
-	"net/http"
-	"time"
-
-	"github.com/jad-b/torque"
-)
-
-// UserSecrets is a struct encapsulating a user's sensitive data. This has been
-// extracted from the user tables, in order to isolate sensitive data from
-// non-sensitive data so we can reduce our risk of doing something stupid down
-// the road.
-//
-// SQL:
-// CREATE TABLE ppi (
-//	 "id" numeric(5,2) NOT NULL
-//	 "user_id" text NOT NULL UNIQUE
-//	 "password_hash" text NOT NULL
-//	 "password_salt" text NOT NULL
-//	 "iteration_count" numeric(5,2) NOT NULL
-//   "current_token" text NOT NULL
-//	 "timestamp" timestamp(0) with time zone NOT NULL UNIQUE,
-//   "token_last_seen" timestamp(0) with time zone NOT NULL UNIQUE,
-// );
-type UserSecrets struct {
-	ID             int `json:"id"`
-	UserID         int `json:"user_id"`
-	PasswordHash   string
-	PasswordSalt   string
-	IterationCount int
-	Timestamp      time.Time `json:"timestamp"`
-	CurrentToken   string    `json:"token"`
-	TokenLastSeen  time.Time `json:"token_last_seen"`
-}
-
-// Create a new UserSecrets instance
-func NewUserSecrets(u *User, passwordHash string) *UserSecrets {
-	return &UserSecrets{
-		UserID:         u.ID,
-		PasswordHash:   passwordHash,
-		PasswordSalt:   NewSalt(DefaultSaltLength),
-		IterationCount: DefaultIterationCount,
-		Timestamp:      time.Now(),
-	}
-}
-
-func (p *UserSecrets) Validate(password string) bool {}
-func GenerateHash(password string) string            {}
+import "math/rand"
 
 const (
 	// The alphabet constant is used to expose all of the valid characters that
@@ -71,9 +23,30 @@ const (
 	// iteration count along side each salt and hash in order to allow us the
 	// flexibility to safetly modify this default in the future.
 	DefaultIterationCount = 1000
+	// DefaultBcryptCost is the power-of-two iterations (2^cost) to apply via
+	// bcrypt when hashing.
+	DefaultBcryptCost = 12
 )
 
-// Generate a new, random, salt of the length specified
+// DefaultHash applies a one-way bcrypt hash to a string.
+// It returns the resulting hash, the salt used, and the cost (power of two of
+// iterations to be performed).
+func DefaultHash(password string) (hash, salt string, cost int) {
+	s = NewSalt(DefaultSaltLength)
+	return GenerateHash(password, s, DefaultBcryptCost), s, DefaultBcryptCost
+}
+
+// GenerateHash one-way bcrypt hashes the password.
+// TODO(jdb) Salt is currently unused
+func GenerateHash(password, salt string, cost int) string {
+	hashed, err := bcrypt.GeneratePasswordFrom(password, cost)
+	if err != nil {
+		log.Error(err)
+	}
+	return hashed
+}
+
+// NewSalt generates a new, random, salt of the length specified
 func NewSalt(length int) string {
 	// Create a new []byte of size *length*
 	b := make([]byte, length)
