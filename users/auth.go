@@ -1,9 +1,17 @@
 package users
 
 import (
+	"bytes"
+	crand "crypto/rand"
+	"encoding/base64"
+	"encoding/json"
 	"log"
 	"math/rand"
+	"net/http"
+	"net/url"
 	"time"
+
+	"github.com/jad-b/torque"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -32,6 +40,9 @@ const (
 	// DefaultBcryptCost is the power-of-two iterations (2^cost) to apply via
 	// bcrypt when hashing.
 	DefaultBcryptCost = 12
+
+	// AuthTokenLength is the size of a generated auth token
+	AuthTokenLength = 32
 )
 
 var (
@@ -70,4 +81,51 @@ func NewSalt(length int) string {
 		b[i] = alphabet[rand.Intn(len(alphabet))]
 	}
 	return string(b)
+}
+
+// GenerateRandomBytes returns securely generated random bytes.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+// From: https://elithrar.github.io/article/generating-secure-random-numbers-crypto-rand/
+func GenerateRandomBytes(n int) ([]byte, error) {
+	b := make([]byte, n)
+	_, err := crand.Read(b)
+	// Note that err == nil only if we read len(b) bytes.
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+// GenerateRandomString returns a URL-safe, base64 encoded
+// securely generated random string.
+// It will return an error if the system's secure random
+// number generator fails to function correctly, in which
+// case the caller should not continue.
+// From: https://elithrar.github.io/article/generating-secure-random-numbers-crypto-rand/
+func GenerateRandomString(s int) (string, error) {
+	b, err := GenerateRandomBytes(s)
+	return base64.URLEncoding.EncodeToString(b), err
+}
+
+// Separate for testing purposes
+func buildAuthenticationRequest(serverURL, username, password string) (*http.Request, error) {
+	// Prepare the URL
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	u.Path = torque.SlashJoin(u.Path, "authenticate")
+	// Prepare the JSON body
+	body, err := json.Marshal(u)
+	if err != nil {
+		log.Fatal("Failed to marshal credentials")
+	}
+	req, err := http.NewRequest("POST", u.String(), bytes.NewBuffer(body))
+	if err != nil {
+		return &http.Request{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	return req, nil
 }
