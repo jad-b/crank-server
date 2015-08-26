@@ -1,7 +1,6 @@
 package users
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -34,6 +33,49 @@ CREATE TABLE auth.UserAuths(
 );`
 )
 
+// Authenticate logs the User in on the Torque Server.
+// This is a client-side call.
+func Authenticate(serverURL, username, password string) UserAuth {
+	req, err := buildAuthenticationRequest(serverURL, username, password)
+	// Send the auth request
+	client := http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal("Failed to authenticate")
+	}
+	// Parse the response into a User object
+	user := UserAuth{}
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal("Failed to read authentication response body")
+	}
+	err = json.Unmarshal(respBody, &user)
+	if err != nil {
+		log.Fatal("Failed to unmarshal authentication response body")
+	}
+	return user
+}
+
+// HandleAuthentication validates username & password and returns a User object
+// with a new AuthToken, or an Unauthorized error.
+func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
+	username, password, ok := req.BasicAuth()
+	if !ok {
+		w.Header().Set("WWW-Authenticate", "Your bad")
+		http.Error(w, "Failed to retrieve credentials from request", http.StatusUnauthorized)
+		return
+	}
+	log.Printf("Authentication request from %s", username)
+	// Check the credentials
+	user := UserAuth{Username: username}
+	ok = user.ValidatePassword(password)
+	if !ok {
+		w.Header().Set("WWW-Authenticate", "Your bad")
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+}
+
 // UserAuth holds the auth token data mapped to a UserAuth ID.
 // TODO It also holds some data, like Enabled, AccountCreated, that might be better
 // served in a UserMeta table, but I left it here for simplicity's sake. Also, I
@@ -59,39 +101,6 @@ type UserAuth struct {
 	TokenLastUsed time.Time `json:"token_last_used"`
 }
 
-// Authenticate logs the User in on the Torque Server.
-// This is a client-side call.
-// This has the side-effect of modifying the calling object's state.
-func Authenticate(serverURL, username, password string) UserAuth {
-	// Prepare the URL
-	u, err := url.Parse(serverURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-	u.Path = torque.SlashJoin(u.Path, "users", "authenticate")
-	// Prepare the JSON body
-	body, err := json.Marshal(u)
-	if err != nil {
-		log.Fatal("Failed to marshal credentials")
-	}
-	// Send the auth request
-	resp, err := http.Post(u.String(), "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		log.Fatal("Failed to authenticate")
-	}
-	// Parse the response into a User object
-	user := &UserAuth{}
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal("Failed to read authentication response body")
-	}
-	err = json.Unmarshal(respBody, user)
-	if err != nil {
-		log.Fatal("Failed to unmarshal authentication response body")
-	}
-	return *user
-}
-
 // IsAuthenticated returns whether or not the User is authenticated. This
 // method *does not* touch the server, so it relies upon available client-side
 // data.
@@ -107,6 +116,23 @@ func NewUserAuth() *UserAuth {
 		Cost:           DefaultBcryptCost,
 		AccountCreated: time.Now(),
 	}
+}
+
+// Authorize creates a new auth token and updates its metadata fields.
+// It expects that the previous User record has been fully loaded from the
+// database, else you risk overwriting an existing record!
+func (u *UserAuth) Authorize() error {
+	token, err := GenerateRandomString(AuthTokenLength)
+	if err != nil {
+		return err
+	}
+	u.CurrentToken = token
+	now := time.Now()
+	u.TokenCreated = now
+	u.TokenLastUsed = now
+	// Save changes to DB
+	u.Update(torque.DBConn)
+	return nil
 }
 
 // ValidatePassword verifies if the given username/password is valid.
