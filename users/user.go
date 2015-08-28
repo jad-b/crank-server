@@ -2,9 +2,7 @@ package users
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -32,29 +30,6 @@ CREATE TABLE auth.UserAuths(
   "token_last_used" timestamp(0) with time zone
 );`
 )
-
-// Authenticate logs the User in on the Torque Server.
-// This is a client-side call.
-func Authenticate(serverURL, username, password string) UserAuth {
-	req, err := buildAuthenticationRequest(serverURL, username, password)
-	// Send the auth request
-	client := http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal("Failed to authenticate")
-	}
-	// Parse the response into a User object
-	user := UserAuth{}
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal("Failed to read authentication response body")
-	}
-	err = json.Unmarshal(respBody, &user)
-	if err != nil {
-		log.Fatal("Failed to unmarshal authentication response body")
-	}
-	return user
-}
 
 // HandleAuthentication validates username & password and returns a User object
 // with a new AuthToken, or an Unauthorized error.

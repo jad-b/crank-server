@@ -1,18 +1,17 @@
 package redteam
 
-import "github.com/jad-b/torque"
+import "github.com/jad-b/torque/client"
 
 /*
 	authenticate logs into a torque server
 */
 
 // AuthenticateToServer goes through the authentication workflow
-func AuthenticateToServer(serverURL, username, password string) (torque.API, torque.UserAuth) {
+func AuthenticateToServer(serverURL, username, password string) (*client.TorqueAPI, error) {
 	// Connect to the server
-	sURL := "http://localhost:8080"
-	tAPI := torque.NewTorqueAPI(sURL)
+	tAPI := client.NewTorqueAPI(serverURL)
 
 	// Authenticate our user
-	u := tAPI.authenticate(username, password)
-	return tAPI, u
+	err := tAPI.Authenticate(username, password)
+	return tAPI, err
 }
