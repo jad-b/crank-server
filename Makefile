@@ -2,28 +2,25 @@
 BUILD_DIR=build
 GOFLAGS=
 
-APPS = cli rest
-
-# Source files per binary. Most require all other Go files outside of bin/
-CLI_SRCS = $(wildcard bin/cli/main.go */*.go)
-REST_SRCS = $(wildcard bin/rest/main.go */*.go)
+TORQUE_PKG=github.com/jad-b/torque
+TORQUE_APPS=cli rest
+APPS=$(addprefix torque_, $(TORQUE_APPS))
 
 # Build all binaries
-build: $(APPS)
+build: $(addprefix $(BUILD_DIR)/, $(APPS))
 
-# How to *actually* build each binary
+# Install all binaries:
+install: $(addprefix $(INSTALL_DIR)/, $(APPS))
+
+# How to build each binary
 $(BUILD_DIR)/%:
 		@mkdir -p $(dir $@) # Create "$BUILD_DIR/%" if it doesn't exist
-		go build ${GOFLAGS} -o $(abspath $(@D))/torque_$(@F) ./$*
+		go build $(GOFLAGS) -o $(@) ./bin/$*
 
+# How to install each binary
+$(INSTALL_DIR)/%:
+	go install $(GOFLAGS) $(TORQUE_PKG)/bin/$(@F)
 
-# Create a rule for each listed app, which we'll define the targets of below
-$(APPS): %: $(BUILD_DIR)/bin/%
-$(BINARIES): %: $(BUILD_DIR)/%
-
-# Rules for building each binary
-$(BUILD_DIR)/cli: $(CLI_SRCS)
-$(BUILD_DIR)/rest: $(REST_SRCS)
 
 clean:
 	# Delete built binaries
