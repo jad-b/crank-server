@@ -130,7 +130,7 @@ func (bw *Bodyweight) HandlePost(w http.ResponseWriter, req *http.Request) {
 
 // HandleGet returns the related bodyweight record
 func (bw *Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
-	timestamp, err := torque.Stamp(req)
+	timestamp, err := torque.GetOrCreateTimestamp(req)
 	if err != nil {
 		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
 		return
@@ -164,7 +164,7 @@ func (bw *Bodyweight) HandlePut(w http.ResponseWriter, req *http.Request) {
 // HandleDelete removes the bodyweight record from the database.
 func (bw *Bodyweight) HandleDelete(w http.ResponseWriter, req *http.Request) {
 	// Retrieve timestamp from request
-	timestamp, err := torque.Stamp(req)
+	timestamp, err := torque.GetOrCreateTimestamp(req)
 	if err != nil {
 		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
 		return

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -36,6 +37,9 @@ func NewTorqueAPI(serverURL string) *TorqueAPI {
 // This is a client-side call.
 func (t *TorqueAPI) Authenticate(username, password string) error {
 	req, err := buildAuthenticationRequest(t.ServerURL.String(), username, password)
+	if err != nil {
+		return err
+	}
 	// Send the auth request
 	client := http.Client{}
 	resp, err := client.Do(req)
@@ -59,19 +63,21 @@ func buildAuthenticationRequest(serverURL, username, password string) (*http.Req
 	// Prepare the URL
 	u, err := url.Parse(serverURL)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("Failed to parse server URL: %s", serverURL)
 	}
 	u.Path = torque.SlashJoin(u.Path, "authenticate")
 	// Prepare the JSON body
 	body, err := json.Marshal(u)
 	if err != nil {
-		log.Fatal("Failed to marshal credentials")
+		return nil, errors.New("Failed to marshal credentials")
 	}
+	// Create the HTTP request
 	req, err := http.NewRequest("POST", u.String(), bytes.NewBuffer(body))
 	if err != nil {
-		return &http.Request{}, err
+		return nil, fmt.Errorf("Failed to create request: %s", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	torque.LogRequest(req)
 	return req, nil
 }
 
