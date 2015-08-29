@@ -1,6 +1,8 @@
 #!/bin/make
 BUILD_DIR=build
-GOFLAGS=
+# ?= sets a default that's overriden by an env var
+GOFLAGS?=
+TEST_ARGS?=
 
 TORQUE_PKG=github.com/jad-b/torque
 TORQUE_APPS=cli rest
@@ -24,9 +26,12 @@ $(BUILD_DIR)/%:
 $(INSTALL_DIR)/%:
 	go install $(GOFLAGS) $(TORQUE_PKG)/bin/$(@F)
 
-
 clean:
 	# Delete built binaries
 	rm -rf $(BUILD_DIR)
 
+redteam:
+	go test -v github.com/jad-b/torque/redteam $(TEST_ARGS)
+
 .PHONY: clean
+.PHONY: redteam
