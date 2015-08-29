@@ -115,7 +115,7 @@ func (u *UserAuth) Authorize() error {
 func (u *UserAuth) ValidatePassword(password string) bool {
 	err := u.Retrieve(torque.DBConn) // Lookup from the database
 	if err != nil {                  // User not found
-		log.Print("Invalid login for ", u.Username)
+		log.Printf("User %s not found", u.Username)
 		return false
 	}
 	// Hash the password
@@ -131,7 +131,7 @@ func (u *UserAuth) ValidatePassword(password string) bool {
 func (u *UserAuth) ValidateAuthToken(token string) bool {
 	err := u.Retrieve(torque.DBConn) // Lookup from the database
 	if err != nil {                  // User not found
-		log.Print("Invalid login for ", u.Username)
+		log.Printf("User %s not found", u.Username)
 		return false
 	}
 
