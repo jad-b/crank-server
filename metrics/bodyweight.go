@@ -8,16 +8,19 @@ import (
 	"time"
 
 	"github.com/jad-b/torque"
+	"github.com/jad-b/torque/users"
 )
 
-// BodyweightSQL is the SQL required to create the Bodyweight table.
-const BodyweightSQL = `
+const (
+	// BodyweightSQL is the SQL required to create the Bodyweight table.
+	BodyweightSQL = `
 CREATE TABLE metrics.bodyweight (
   "timestamp" timestamp(0) with time zone NOT NULL UNIQUE,
   weight numeric(5,2) NOT NULL CHECK (weight < 1000),
   comment text
 );
 `
+)
 
 // Bodyweight is a timestamped bodyweight record, with optional comment.
 type Bodyweight struct {
@@ -127,7 +130,7 @@ func (bw *Bodyweight) HandlePost(w http.ResponseWriter, req *http.Request) {
 
 // HandleGet returns the related bodyweight record
 func (bw *Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
-	timestamp, err := torque.Stamp(req)
+	timestamp, err := torque.GetOrCreateTimestamp(req)
 	if err != nil {
 		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
 		return
@@ -161,7 +164,7 @@ func (bw *Bodyweight) HandlePut(w http.ResponseWriter, req *http.Request) {
 // HandleDelete removes the bodyweight record from the database.
 func (bw *Bodyweight) HandleDelete(w http.ResponseWriter, req *http.Request) {
 	// Retrieve timestamp from request
-	timestamp, err := torque.Stamp(req)
+	timestamp, err := torque.GetOrCreateTimestamp(req)
 	if err != nil {
 		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
 		return
@@ -175,29 +178,16 @@ func (bw *Bodyweight) HandleDelete(w http.ResponseWriter, req *http.Request) {
 }
 
 /*
-	RESTfulClient
+	RESTfulResource
 */
 
-// HTTPPost creates a new bodyweight record on the REST API server.
-//
-// It probably makes more sense to have a generic 'metrics/' endpoint that accepts
-// a variety of metrics, especially if these continue to grow.
-func (bw *Bodyweight) HTTPPost(serverURL string) (resp *http.Response, err error) {
-	endpoint := "/metrics/bodyweight" // For now.
-	return torque.PostJSON(endpoint, bw)
+// GetResourceName returns the name the resource wishes to be refered to by in
+// the URL
+func (bw *Bodyweight) GetResourceName() string {
+	// user := GetUserFromRequest
+	user := users.NewUserAuth()
+	return torque.SlashJoin(user.Username, "bodyweight")
 }
 
-// HTTPGet requests a bodyweight record from the server.
-func (bw *Bodyweight) HTTPGet(serverURL string) (resp *http.Response, err error) {
-	return nil, nil
-}
-
-// HTTPPut updates the server with the current state of the Bodyweight record.
-func (bw *Bodyweight) HTTPPut(serverURL string) (resp *http.Response, err error) {
-	return nil, nil
-}
-
-// HTTPDelete deletes the matching Bodyweight record on the server.
-func (bw *Bodyweight) HTTPDelete(serverURL string) (resp *http.Response, err error) {
-	return nil, nil
-}
+// RegisterURL sets up the handler for the Bodyweight reosurce on the server.
+func (bw *Bodyweight) RegisterURL() error { return nil }
