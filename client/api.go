@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -46,14 +45,20 @@ func (t *TorqueAPI) Authenticate(username, password string) error {
 	if err != nil {
 		return errors.New("No response received from authentication request")
 	}
-	// Parse the response into a User object
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return errors.New("Failed to read authentication response body")
+	if resp.StatusCode != 200 { // Invalid creds
+		torque.LogResponse(resp)
+		var errResp torque.ErrorResponse
+		err = torque.ReadJSONResponse(resp, &errResp)
+		if err != nil {
+			return errors.New("Failed to read authentication response body")
+		}
+		return errResp
 	}
-	err = json.Unmarshal(respBody, &t.User)
+
+	// Parse the response into a User object
+	err = torque.ReadJSONResponse(resp, &t.User)
 	if err != nil {
-		return errors.New("Failed to unmarshal authentication response body")
+		return err
 	}
 	return nil
 }
@@ -66,18 +71,13 @@ func buildAuthenticationRequest(serverURL, username, password string) (*http.Req
 		return nil, fmt.Errorf("Failed to parse server URL: %s", serverURL)
 	}
 	u.Path = torque.SlashJoin(u.Path, "authenticate")
-	// Prepare the JSON body
-	body, err := json.Marshal(u)
-	if err != nil {
-		return nil, errors.New("Failed to marshal credentials")
-	}
 	// Create the HTTP request
-	req, err := http.NewRequest("POST", u.String(), bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create request: %s", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	torque.LogRequest(req)
+	req.SetBasicAuth(username, password)
 	return req, nil
 }
 

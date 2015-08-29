@@ -2,6 +2,7 @@ package redteam
 
 import (
 	"flag"
+	"log"
 	"testing"
 
 	"github.com/jad-b/torque"
@@ -23,6 +24,7 @@ var (
 
 func init() {
 	flag.Var(&torqueAddr, "torque-addr", "host:port of Torque API")
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
 func TestAuthentication(t *testing.T) {
@@ -32,9 +34,8 @@ func TestAuthentication(t *testing.T) {
 		torqueAddr.Scheme = "http"
 	}
 	t.Log("Authenticating against ", torqueAddr.String())
-	tAPI, err := AuthenticateToServer(torqueAddr.String(), username, password)
+	_, err := AuthenticateToServer(torqueAddr.String(), username, password)
 	if err != nil {
 		t.Error(err)
 	}
-	t.Log("TorqueAPI: %+v", tAPI)
 }
