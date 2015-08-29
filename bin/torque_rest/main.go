@@ -11,10 +11,9 @@ import (
 )
 
 var (
-	serve = flag.Bool("http", false, "Run a Torque server")
-	addr  = flag.String("addr", "127.0.0.1:8000", "Host:port of Torque server")
-	cert  = flag.String("cert", "", "TLS server certificate")
-	key   = flag.String("key", "", "TLS server private key")
+	addr = flag.String("addr", "127.0.0.1:8000", "Host:port of Torque server")
+	cert = flag.String("cert", "", "TLS server certificate")
+	key  = flag.String("key", "", "TLS server private key")
 )
 
 func runServer() {
