@@ -1,11 +1,17 @@
 package users
 
 import (
+	"bytes"
 	crand "crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"log"
 	"math/rand"
+	"net/http"
+	"net/url"
 	"time"
+
+	"github.com/jad-b/torque"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -101,4 +107,25 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 func GenerateRandomString(s int) (string, error) {
 	b, err := GenerateRandomBytes(s)
 	return base64.URLEncoding.EncodeToString(b), err
+}
+
+// Separate for testing purposes
+func buildAuthenticationRequest(serverURL, username, password string) (*http.Request, error) {
+	// Prepare the URL
+	u, err := url.Parse(serverURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	u.Path = torque.SlashJoin(u.Path, "authenticate")
+	// Prepare the JSON body
+	body, err := json.Marshal(u)
+	if err != nil {
+		log.Fatal("Failed to marshal credentials")
+	}
+	req, err := http.NewRequest("POST", u.String(), bytes.NewBuffer(body))
+	if err != nil {
+		return &http.Request{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	return req, nil
 }

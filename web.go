@@ -102,6 +102,15 @@ func LogRequestThenError(w http.ResponseWriter, r *http.Request) {
 		http.StatusNotImplemented)
 }
 
+// LogResponse idempotently writes the http.Response to the default Logger.
+func LogResponse(resp *http.Response) {
+	b, err := httputil.DumpResponse(resp, true)
+	if err != nil {
+		log.Print(err)
+	}
+	log.Print(string(b))
+}
+
 // ReadBody extracts the body from the HTTP request. If there is an error, it
 // writes it back to the response.
 func ReadBody(w http.ResponseWriter, req *http.Request) (b []byte) {
@@ -144,6 +153,15 @@ func ParseTimestamp(value string) (time.Time, error) {
 	return time.Time{}, err
 }
 
+// ReadJSONResponse unmarshals the http.Response.Body into a struct.
+func ReadJSONResponse(resp *http.Response, v interface{}) error {
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(respBody, v)
+}
+
 // WriteJSON writes the value v to the http response stream as json with standard
 // json encoding.
 // Stolen from github.com/docker/docker/api/server
@@ -161,4 +179,16 @@ func WriteJSON(w http.ResponseWriter, code int, v interface{}) {
 // WriteOkayJSON encodes v to the HTTP response with a 200 OK status code.
 func WriteOkayJSON(w http.ResponseWriter, v interface{}) {
 	WriteJSON(w, http.StatusOK, v)
+}
+
+// HTTPError wraps http.Error but handles marshalling the error into a JSON
+// string
+func HTTPError(w http.ResponseWriter, e error, code int) {
+	// Marhsall struct into a JSON string
+	errorJSON, err := json.MarshalIndent(e, "", "\t")
+	if err != nil {
+		log.Printf("Trouble marshalling this error: %s.\nThe user will receive a generic %s", e.Error(), genericErrorJSON)
+		errorJSON = genericErrorJSON
+	}
+	http.Error(w, string(errorJSON), code)
 }

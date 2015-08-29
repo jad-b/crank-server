@@ -45,8 +45,9 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 	user := UserAuth{Username: username}
 	ok = user.ValidatePassword(password)
 	if !ok {
-		w.Header().Set("WWW-Authenticate", "Your bad")
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		e := torque.ErrorResponse{"Invalid credentials"}
+		w.Header().Set("WWW-Authenticate", e.Error())
+		torque.HTTPError(w, e, http.StatusUnauthorized)
 		return
 	}
 }
@@ -112,16 +113,33 @@ func (u *UserAuth) Authorize() error {
 
 // ValidatePassword verifies if the given username/password is valid.
 func (u *UserAuth) ValidatePassword(password string) bool {
+	err := u.Retrieve(torque.DBConn) // Lookup from the database
+	if err != nil {                  // User not found
+		log.Print("Invalid login for ", u.Username)
+		return false
+	}
 	// Hash the password
 	hashed, _, _ := DefaultHash(password)
-	u.Retrieve(torque.DBConn) // Lookup from the database
-	return hashed == u.PasswordHash
+	ok := hashed == u.PasswordHash
+	if !ok {
+		log.Print("Invalid login for ", u.Username)
+	}
+	return ok
 }
 
 // ValidateAuthToken verifies the given auth token is valid for the user.
 func (u *UserAuth) ValidateAuthToken(token string) bool {
-	u.Retrieve(torque.DBConn) // Lookup from the database
-	return token == u.CurrentToken
+	err := u.Retrieve(torque.DBConn) // Lookup from the database
+	if err != nil {                  // User not found
+		log.Print("Invalid login for ", u.Username)
+		return false
+	}
+
+	ok := token == u.CurrentToken
+	if !ok {
+		log.Print("Invalid token for ", u.Username)
+	}
+	return ok
 }
 
 /*
