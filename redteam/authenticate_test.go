@@ -3,6 +3,8 @@ package redteam
 import (
 	"flag"
 	"testing"
+
+	"github.com/jad-b/torque"
 )
 
 /*
@@ -15,12 +17,24 @@ const (
 )
 
 var (
-	torqueURL = flag.String("torque-url", "localhost:8080", "URL of Torque API")
+	torqueAddr = torque.HostPortFlag{Host: "localhost:18000"}
+	https      = flag.Bool("secure", false, "Whether to use HTTPS")
 )
 
+func init() {
+	flag.Var(&torqueAddr, "torque-addr", "host:port of Torque API")
+}
+
 func TestAuthentication(t *testing.T) {
-	_, err := AuthenticateToServer(*torqueURL, username, password)
+	if *https {
+		torqueAddr.Scheme = "https"
+	} else {
+		torqueAddr.Scheme = "http"
+	}
+	t.Log("Authenticating against ", torqueAddr.String())
+	tAPI, err := AuthenticateToServer(torqueAddr.String(), username, password)
 	if err != nil {
 		t.Error(err)
 	}
+	t.Log("TorqueAPI: %+v", tAPI)
 }
