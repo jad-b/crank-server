@@ -1,0 +1,177 @@
+---
+tags:
+  - training
+  - workouts
+  - exercises
+paths:
+  /exercises:
+    get:
+      summary: Get an ExerciseMeta array.
+      description: Retrieve a paginated array of all of our exercises
+      responses:
+        200:
+          description: An array of ExerciseMeta resources
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ExerciseMeta'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
+  /exercises/{name}:
+    get:
+      summary: Get an ExerciseMeta.
+      description: Retrieve detailed information about a specific ExerciseMeta.
+      parameters:
+        - "$ref": "#/parameters/pageParam"
+        - name: name
+          in: path
+          description: The name of the ExerciseMeta to retrieve
+          required: true
+          type: string
+      responses:
+        200:
+          description: An ExerciseMeta resource
+          schema:
+            $ref: '#/definitions/ExerciseMeta'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
+  /workouts:
+    post:
+      summary: Create a Workout.
+      description: Generate a new workout for the provided muscle group.
+      parameters:
+        - name: muscle_group
+          in: body
+          description: The muscle group you would like to generate a workout for.
+          required: true
+          type: string
+      responses:
+        200:
+          description: The newly generated workout.
+          schema:
+            $ref: '#/definitions/Workout'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
+  /workouts/{workout_id}:
+    get:
+      summary: Get a Workout.
+      description: Retrieve the specified workout.
+      parameters:
+        - name: workout_id
+          in: path
+          description: The id of the workout you want to retrieve.
+          required: true
+          type: string
+      responses:
+        200:
+          description: The requested workout.
+          schema:
+            $ref: '#/definitions/Workout'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
+    put: # Update the specified workout
+    delete: # Delete the specifieid workout
+  /workouts/{workout_id}/sets:
+    get: # Get all of the sets under the specified workout
+  /workouts/{workout_id}/sets/{set_id}:
+    get: # Get the specified set
+    put: # Update the specified set
+    delete: # Delete the specified set
+  /workouts/{workout_id}/sets/{set_id}/exercises:
+    get: # All all exercises under the specified set
+  /workouts/{workout_id}/sets/{set_id}/exercises/{exercise_id}:
+    get: # Get the specifeid workout
+    put: # update the specified workout
+    delete: # Delete the specified workout
+
+definitions:
+  Workout:
+    properties:
+      timestamp:
+        type: string
+        description: The time at which this workout was performed.
+      comment:
+        type: string
+        description: Any additional comments made about this workout.
+      exercises:
+        type: array
+        items:
+          $ref: '#/definitions/Exercise'
+  Exercise:
+    properties:
+      comment:
+        type: string
+        description: Any additional comments made about this workout.
+      sets:
+        type: array
+        items:
+          $ref: '#/definitions/Set'
+  Set:
+    properties:
+      reps:
+        type: integer
+        description: The number of repititions to be performed during this set
+      weight:
+        type: integer
+        description: |
+          The weight at which to perform this set's exercise. Will be 0 for
+          bodyweight exercises and cardio.
+      order:
+        type: integer
+        description: No idea
+      rest:
+        type: integer
+        description: The duration to rest for before proceeding with the next set.
+  ExerciseMeta:
+    properties:
+      name:
+        type: string
+        description: The name of this ExerciseMeta
+      progress_differential:
+        type: float64
+        description: The rate at which weight/reps for this excercise should be increased by
+      primary_muscle_group:
+        type: string
+        description: Primary muscle group impacted by this exercise.
+      secondary_muscle_group:
+        type: string
+        description: Secondary muscle group impacted by this exercise.
+      category:
+        type: string
+        description: |
+          What type of exercise is this? Will be one of Resistance, Functional,
+          or Cardio.
+      also_known_as:
+        type: string
+        description: Aliases for this ExerciseMeta
+      mechanics_type:
+        type: string
+        description: Describes the mechanics of this exercise. Will be either Compound or Isolation.
+      muscle_image:
+        type: string
+        description: A link to a heatmap image of the muscles impacted by this exercise
+      guide:
+        type: string
+        description: A newline separated textual guide to this exercise
+      difficulty_level:
+        type: string
+        description: |
+          Indicates the level of skill, on average, required to perform this
+          exercise successfully.
+      equipment:
+        type: string
+        description: Free form text describing any equipment required to perform this exercise.
+      force:
+        type: string
+        description: The direction of force applied to perform this exercise.
+      type:
+        type: string
+        description: This ExerciseMeta's type
