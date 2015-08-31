@@ -3,6 +3,7 @@ package torque
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -154,12 +155,12 @@ func ParseTimestamp(value string) (time.Time, error) {
 }
 
 // ReadJSONResponse unmarshals the http.Response.Body into a struct.
-func ReadJSONResponse(resp *http.Response, v interface{}) error {
-	respBody, err := ioutil.ReadAll(resp.Body)
+func ReadJSONResponse(rc io.Reader, v interface{}) error {
+	b, err := ioutil.ReadAll(rc)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(respBody, v)
+	return json.Unmarshal(b, v)
 }
 
 // WriteJSON writes the value v to the http response stream as json with standard
