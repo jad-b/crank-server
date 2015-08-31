@@ -65,11 +65,13 @@ type UserAuth struct {
 	Enabled        bool      `json:"enabled"`
 	Superuser      bool      `json:"superuser"`
 	// Salt used to hash the password
-	PasswordSalt string
+	PasswordSalt string `json:"-"`
 	// Type of hash used
-	PasswordHash string
+	PasswordHash string `json:"-"`
+
 	// Power-of-two times we iterated over the stored password when hashing
-	Cost int
+	Cost int `json:"-"`
+
 	// Currently active auth token
 	CurrentToken string    `json:"token"`
 	TokenCreated time.Time `json:"timestamp"`
@@ -85,11 +87,14 @@ func (u *UserAuth) IsAuthenticated() bool {
 		time.Since(u.TokenCreated) < AuthTokenLifespan
 }
 
-// NewUserAuth creates a new UserAuth instance with some defaults in place.
-func NewUserAuth() *UserAuth {
+// NewUserAccount creates a new UserAuth instance with some defaults in place.
+func NewUserAccount(username, password string) *UserAuth {
+	hash, salt, cost := DefaultHash(password)
 	return &UserAuth{
-		PasswordSalt:   NewSalt(DefaultSaltLength),
-		Cost:           DefaultBcryptCost,
+		Username:       username,
+		PasswordHash:   hash,
+		PasswordSalt:   salt,
+		Cost:           cost,
 		AccountCreated: time.Now(),
 	}
 }
@@ -255,22 +260,20 @@ func (u *UserAuth) Delete(conn *sql.DB) error {
 
 // HandlePost creates a new UserAuth record.
 func (u *UserAuth) HandlePost(w http.ResponseWriter, req *http.Request) {
-	userID, err := parseUserID(req.URL)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	// Retrieve username & password from Basic-Auth header
+	username, password, ok := req.BasicAuth()
+	if !ok {
+		http.Error(w, "No username and password provided for account creation",
+			http.StatusBadRequest)
 		return
 	}
-	u.ID = userID
-	err = torque.ReadBodyTo(w, req, u)
-	if err != nil {
-		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
-		return
-	}
+	// Create user account
+	u := NewUserAccount(username, password)
+	// Save to database
 	if err = u.Create(torque.DBConn); err != nil {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("Created %+v", u)
 	torque.WriteOkayJSON(w, u)
 }
 

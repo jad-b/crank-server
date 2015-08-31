@@ -53,13 +53,14 @@ var (
 
 // DefaultHash applies a one-way bcrypt hash to a string.
 // It returns the resulting hash, the salt used, and the cost (power of two of
-// iterations to be performed).
+// iterations to be performed). Good for creating passwords.
 func DefaultHash(password string) (hash, salt string, cost int) {
 	s := NewSalt(DefaultSaltLength)
 	return GenerateHash(password, s, DefaultBcryptCost), s, DefaultBcryptCost
 }
 
 // GenerateHash one-way bcrypt hashes the password.
+// Good for verifying passwords on existing user accounts.
 // TODO(jdb) Salt is currently unused
 func GenerateHash(password, salt string, cost int) string {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), cost)
