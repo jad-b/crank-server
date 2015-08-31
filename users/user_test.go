@@ -12,41 +12,40 @@ import (
 var (
 	username = "EzekielSparks"
 	password = "BuildABetterButterRobot"
-)
-
-func init() {
-	// Setup our database connection
-	pgConf := torque.LoadPostgresConfig()
-	DBConn := torque.OpenDBConnection(pgConf)
-
-	testURL := url.URL{
+	testURL  = url.URL{
 		Scheme: "http",
 		Host:   "localhost:18000",
 		// Generate a random user ID for working with
 		Path: "users",
 	}
+)
+
+func init() {
+	// Setup our database connection
+	pgConf := torque.LoadPostgresConfig()
+	torque.OpenDBConnection(pgConf)
 }
 
 func TestBadAccountAuthentication(t *testing.T) {
 	serverURL, username, password := "https://localhost", "JohnFritz", "gazebo"
 	// Create a request for authentication
 	req, err := buildAuthenticationRequest(serverURL, username, password)
-	w := httptest.NewRecorder()
+	resp := httptest.NewRecorder()
 
 	// See how we handle the authentication
-	HandleAuthentication(w, req)
+	HandleAuthentication(resp, req)
 
 	// That account doesn't exist - we should see an error in the status code
 	// and returned body
-	if w.Code != http.StatusUnauthorized {
+	if resp.Code != http.StatusUnauthorized {
 		t.Error("Didn't receive StatusUnauthorized for non-existent account")
 	}
 	var errResp torque.ErrorResponse
-	err := torque.ReadJSONResponse(resp, &errResp)
+	err = torque.ReadJSONResponse(resp.Body, &errResp)
 	if err != nil { // Bad response was returned
 		t.Errorf("Failed to read 401 response: %s", err.Error())
 	}
-	if errResp.Error == "" { // No 'error' message returned
+	if errResp.Error() == "" { // No 'error' message returned
 		t.Error("No 'error' value found in response")
 	}
 }
@@ -58,12 +57,20 @@ func TestAccountCreation(t *testing.T) {
 	req.SetBasicAuth(username, password)
 	resp := httptest.NewRecorder()
 
-	u := *UserAuth{}
+	u := &UserAuth{}
 	u.HandlePost(resp, req)
 
 	if resp.Code != 200 {
 		t.Error("Account creation did not succeed")
 	}
+	var respUser UserAuth
+	if err = torque.ReadJSONResponse(resp.Body, &respUser); err != nil {
+		t.Errorf("Failed to retrieve user from response; %s", err.Error())
+	}
+}
+
+func TestNewUserAccount(t *testing.T) {
+	u := NewUserAccount(username, password)
 	if u.PasswordHash == "" {
 		t.Error("No password was created")
 	}

@@ -268,9 +268,9 @@ func (u *UserAuth) HandlePost(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	// Create user account
-	u := NewUserAccount(username, password)
+	u = NewUserAccount(username, password)
 	// Save to database
-	if err = u.Create(torque.DBConn); err != nil {
+	if err := u.Create(torque.DBConn); err != nil {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
