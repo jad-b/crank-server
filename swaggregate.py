@@ -16,9 +16,9 @@ def extract_includes(filepath='main.yaml'):
     includes = []
     include_stmt = '#include:'
     with open(filepath) as f:
-        comment_lines = [l for l in f if l.startswith('#')]
+        comment_lines = (l for l in f if l.startswith('#'))
         for line in comment_lines:
-            if include_stmt in line:
+            if line.startswith(include_stmt):
                 includes.append(line.replace(include_stmt, '').strip())
     return includes
 
