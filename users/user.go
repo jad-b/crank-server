@@ -13,10 +13,10 @@ import (
 	"github.com/jad-b/torque"
 )
 
-// UserAuthSQL is SQL for creating the auth.UserAuths table
+// UserAuthSQL is SQL for creating the users.UserAuths table
 const (
 	UserAuthSQL = `
-CREATE TABLE auth.UserAuths(
+CREATE TABLE users.UserAuth (
   "id" integer PRIMARY KEY,
   "username" text NOT NULL UNIQUE,
   "account_created" timestamp(0) with time zone NOT NULL,
@@ -154,7 +154,7 @@ func (u *UserAuth) ValidateAuthToken(token string) bool {
 // Create inserts a new UserAuth row into the database
 func (u *UserAuth) Create(conn *sql.DB) error {
 	_, err := conn.Exec(`
-	INSERT INTO auth.UserAuth (
+	INSERT INTO users.UserAuth (
 		id,
 		username,
 		account_created,
@@ -199,7 +199,7 @@ func (u *UserAuth) Retrieve(conn *sql.DB) error {
 		current_token,
 		token_created,
 		token_last_used)
-	FROM auth.UserAuth
+	FROM users.UserAuth
 	WHERE username=$1`,
 		u.Username).Scan(u)
 	if err != nil {
@@ -214,7 +214,7 @@ func (u *UserAuth) Retrieve(conn *sql.DB) error {
 // Or maybe we should implement PATCH for partial updates.
 func (u *UserAuth) Update(conn *sql.DB) error {
 	_, err := conn.Exec(`
-	UPDATE auth.UserAuth
+	UPDATE users.UserAuth
 	SET account_created='$2',
 		enabled='$3',
 		superuser='$4',
@@ -246,7 +246,7 @@ func (u *UserAuth) Update(conn *sql.DB) error {
 // we do also need to expose this ability.
 func (u *UserAuth) Delete(conn *sql.DB) error {
 	err := conn.QueryRow(`
-	DELETE FROM auth.UserAuth
+	DELETE FROM users.UserAuth
 	WHERE username=$1`, u.Username).Scan(u)
 	if err != nil {
 		return err
