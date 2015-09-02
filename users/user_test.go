@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/jad-b/torque"
@@ -25,9 +26,6 @@ var (
 
 func init() {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
-	// Setup our database connection
-	pgConf := torque.LoadPostgresConfig()
-	DBConn = torque.OpenDBConnection(pgConf)
 }
 
 func TestBadAccountAuthentication(t *testing.T) {
@@ -90,7 +88,23 @@ func TestNewUserAccount(t *testing.T) {
 }
 
 func TestCRUDExercise(t *testing.T) {
-	// Create a non-existnent record
+	// Setup our database connection
+	pgConf := torque.LoadPostgresConfig(*torque.PsqlConf)
+	DBConn = torque.OpenDBConnection(pgConf)
+	defer DBConn.Close()
+
+	// Helper logging function
+	cry := func(msg string, e error) {
+		t.Fatalf("%s: %s", msg, e.Error())
+	}
+
+	// Create the table, if missing
+	_, err := DBConn.Exec(UserAuthSQL)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		cry("Failed to create UserAuth table", err)
+	}
+
+	// Create a non-existent record
 	u := NewUserAccount(username, password)
 	// Try to clean-up; Delete may not work
 	defer (func() {
@@ -98,49 +112,48 @@ func TestCRUDExercise(t *testing.T) {
 	})()
 
 	// Try and retrieve the record before it exists
-	err := u.Retrieve(DBConn)
+	err = u.Retrieve(DBConn)
 	if err == nil {
-		t.Fatal("Test user already exists; aborting")
+		cry("Test user already exists; aborting", err)
 	}
 
 	// Create the record
 	err = u.Create(DBConn)
 	if err != nil {
-		t.Fatal("Failed to create record")
+		cry("Failed to create record", err)
 	}
 	// Retrieve newly-created record
 	u2 := &UserAuth{Username: username}
-	err = u2.Retrieve(DBConn)
-	if err != nil {
-		t.Fatal("Failed to retrieve record")
+	if err = u2.Retrieve(DBConn); err != nil {
+		cry("Failed to retrieve record", err)
 	}
 	// They should look the same - somewhat
 	if u.PasswordHash != u2.PasswordHash {
-		t.Fatalf("Failed to retrieve correct account - password hashes don't match")
+		t.Fatal("Failed to retrieve correct account - password hashes don't match")
 	}
 
 	// Try to update the record via stamping a new token
 	err = u2.Authorize(DBConn)
 	if err != nil {
-		t.Fatal("Failed to update the record during Authorization")
+		cry("Failed to update the record during Authorization", err)
 	}
 	// Retrieve changes
 	err = u.Retrieve(DBConn)
 	if err != nil {
-		t.Fatal("Failed to retrieve newly-updated record")
+		cry("Failed to retrieve newly-updated record", err)
 	}
 	if u.CurrentToken != u2.CurrentToken {
-		t.Fatal("Token doesn't match after update")
+		cry("Token doesn't match after update", err)
 	}
 
 	// Delete the user record
 	err = u2.Delete(DBConn)
 	if err != nil {
-		t.Fatal("Failed to delete record")
+		cry("Failed to delete record", err)
 	}
 	// Should fail to retrieve a deleted record
 	err = u.Retrieve(DBConn)
 	if err == nil {
-		t.Fatal("Post-deletion retrieval returned SUCCESS")
+		cry("Post-deletion retrieval returned SUCCESS", err)
 	}
 }
