@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"path/filepath"
 	"time"
 
 	// Registers the Postgres driver with the SQL package
@@ -77,6 +78,10 @@ func OpenDBConnection(conf *PostgresConfig) *sql.DB {
 	if err != nil {
 		log.Fatalf("Can't connect to db: %s", err)
 	}
+	// Actually try the connection
+	if err = conn.Ping(); err != nil {
+		log.Fatal(err)
+	}
 	log.Printf("Database connection has been established; %s", conf.SafeString())
 	// Assign to global connection
 	DBConn = conn
@@ -84,11 +89,15 @@ func OpenDBConnection(conf *PostgresConfig) *sql.DB {
 }
 
 // LoadPostgresConfig opens a PostgresConfig from a file
-func LoadPostgresConfig() (conf *PostgresConfig) {
+func LoadPostgresConfig(confFile string) (conf *PostgresConfig) {
 	conf = &PostgresConfig{} // Use a blank configuration
-	f, err := os.Open(*PsqlConf)
+	absConfPath, err := filepath.Abs(confFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	f, err := os.Open(absConfPath)
 	if err != nil || os.IsNotExist(err) {
-		log.Fatalf("No database configuration file found at %s", *PsqlConf)
+		log.Printf("No database configuration file found at %s", absConfPath)
 	} else {
 		err = json.NewDecoder(f).Decode(conf)
 		if err != nil {
