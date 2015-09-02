@@ -102,7 +102,7 @@ func NewUserAccount(username, password string) *UserAuth {
 // Authorize creates a new auth token and updates its metadata fields.
 // It expects that the previous User record has been fully loaded from the
 // database, else you risk overwriting an existing record!
-func (u *UserAuth) Authorize() error {
+func (u *UserAuth) Authorize(conn *sql.DB) error {
 	token, err := GenerateRandomString(AuthTokenLength)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func (u *UserAuth) Authorize() error {
 	u.TokenCreated = now
 	u.TokenLastUsed = now
 	// Save changes to DB
-	u.Update(torque.DBConn)
+	u.Update(conn)
 	return nil
 }
 

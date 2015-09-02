@@ -88,7 +88,7 @@ func LoadPostgresConfig() (conf *PostgresConfig) {
 	conf = &PostgresConfig{} // Use a blank configuration
 	f, err := os.Open(*PsqlConf)
 	if err != nil || os.IsNotExist(err) {
-		log.Fatal("No configuration file found.")
+		log.Fatalf("No database configuration file found at %s", *PsqlConf)
 	} else {
 		err = json.NewDecoder(f).Decode(conf)
 		if err != nil {
