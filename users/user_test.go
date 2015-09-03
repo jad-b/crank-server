@@ -1,7 +1,6 @@
 package users
 
 import (
-	"database/sql"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/jad-b/torque"
+	"github.com/jmoiron/sqlx"
 )
 
 var (

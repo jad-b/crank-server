@@ -4,7 +4,6 @@
 package integration_test
 
 import (
-	"database/sql"
 	"log"
 	"reflect"
 	"testing"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/jad-b/torque"
 	"github.com/jad-b/torque/metrics"
+	"github.com/jmoiron/sqlx"
 )
 
 var (

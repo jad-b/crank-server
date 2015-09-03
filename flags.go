@@ -1,12 +1,13 @@
 package torque
 
 import (
-	"database/sql"
 	"fmt"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // CommandLineActor is capable of parsing and acting upon commmand-line arguments
@@ -16,16 +17,16 @@ type CommandLineActor interface {
 }
 
 // ActOnDB requests the actor perform it's correct method against the database.
-func ActOnDB(actor DBActor, action string, conn *sqlx.DB) error {
+func ActOnDB(actor DBActor, action string, db *sqlx.DB) error {
 	switch action {
 	case "create":
-		return actor.Create(conn)
+		return actor.Create(db)
 	case "retrieve":
-		return actor.Retrieve(conn)
+		return actor.Retrieve(db)
 	case "update":
-		return actor.Update(conn)
+		return actor.Update(db)
 	case "delete":
-		return actor.Delete(conn)
+		return actor.Delete(db)
 	default:
 		return fmt.Errorf("%s is an invalid action", action)
 	}

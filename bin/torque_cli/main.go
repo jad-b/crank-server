@@ -56,7 +56,7 @@ func dbOrWeb() {
 	} else {
 		web = false
 		// Open up a Database connection
-		pgconf := torque.LoadPostgresConfig()
+		pgconf := torque.LoadPostgresConfig(*torque.PsqlConf)
 		torque.OpenDBConnection(pgconf)
 	}
 }
@@ -93,7 +93,7 @@ func handleArgs() {
 			log.Printf("Response from %s:\n%s \n", *addr, buf.String())
 		}
 	} else {
-		err = torque.ActOnDB(r, action, torque.DBConn)
+		err = torque.ActOnDB(r, action, torque.DB)
 	}
 	if err != nil {
 		terminalError = err

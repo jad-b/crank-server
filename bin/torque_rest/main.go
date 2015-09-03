@@ -30,7 +30,7 @@ func runServer() {
 	mux.HandleFunc("/", torque.LogRequestThenError)
 
 	// Setup our database connection
-	pgConf := torque.LoadPostgresConfig()
+	pgConf := torque.LoadPostgresConfig(*torque.PsqlConf)
 	torque.OpenDBConnection(pgConf)
 
 	// Start the server

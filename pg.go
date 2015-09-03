@@ -1,7 +1,6 @@
 package torque
 
 import (
-	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	// Registers the Postgres driver with the SQL package
 	_ "github.com/lib/pq"
 )
@@ -32,8 +32,8 @@ var (
 	PsqlDB = flag.String("psql-db", "", "Postgresqlx.DB")
 	// PsqlConf is a filepath to a configuration file
 	PsqlConf = flag.String("psql-conf", "pgconf.json", "Configuration file for DB connection")
-	// DBConn represents an open connection to a Postgres DB
-	DBConn *sqlx.DB
+	// DB represents an open connection to a Postgres DB
+	DB *sqlx.DB
 )
 
 // DBActor defines an object which implements basic data operations
@@ -45,7 +45,7 @@ type DBActor interface {
 }
 
 // PostgresConfig is the minimal config needed to connect to a Postgres database.
-// Shared DBConn singleton
+// Shared DB singleton
 type PostgresConfig struct {
 	User     string `json:"user"`
 	Password string `json:"password"`
@@ -74,18 +74,11 @@ func (conf *PostgresConfig) SafeString() string {
 
 // OpenDBConnection opens and returns a connection to the Postgresqlx.DB
 func OpenDBConnection(conf *PostgresConfig) *sqlx.DB {
-	conn, err := sql.Open("postgres", conf.buildPGURL())
-	if err != nil {
-		log.Fatalf("Can't connect to db: %s", err)
-	}
-	// Actually try the connection
-	if err = conn.Ping(); err != nil {
-		log.Fatal(err)
-	}
+	db := sqlx.MustConnect("postgres", conf.buildPGURL())
 	log.Printf("Database connection has been established; %s", conf.SafeString())
 	// Assign to global connection
-	DBConn = conn
-	return DBConn
+	DB = db
+	return DB
 }
 
 // LoadPostgresConfig opens a PostgresConfig from a file

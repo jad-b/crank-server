@@ -1,7 +1,6 @@
 package users
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jad-b/torque"
+	"github.com/jmoiron/sqlx"
 )
 
 // UserAuthSQL is SQL for creating the users.UserAuths table
@@ -102,7 +102,7 @@ func NewUserAccount(username, password string) *UserAuth {
 // Authorize creates a new auth token and updates its metadata fields.
 // It expects that the previous User record has been fully loaded from the
 // database, else you risk overwriting an existing record!
-func (u *UserAuth) Authorize(conn *sqlx.DB) error {
+func (u *UserAuth) Authorize(db *sqlx.DB) error {
 	token, err := GenerateRandomString(AuthTokenLength)
 	if err != nil {
 		return err
@@ -112,14 +112,14 @@ func (u *UserAuth) Authorize(conn *sqlx.DB) error {
 	u.TokenCreated = now
 	u.TokenLastUsed = now
 	// Save changes to DB
-	u.Update(conn)
+	u.Update(db)
 	return nil
 }
 
 // ValidatePassword verifies if the given username/password is valid.
 func (u *UserAuth) ValidatePassword(password string) bool {
-	err := u.Retrieve(torque.DBConn) // Lookup from the database
-	if err != nil {                  // User not found
+	err := u.Retrieve(torque.DB) // Lookup from the database
+	if err != nil {              // User not found
 		log.Printf("User %s not found", u.Username)
 		return false
 	}
@@ -134,8 +134,8 @@ func (u *UserAuth) ValidatePassword(password string) bool {
 
 // ValidateAuthToken verifies the given auth token is valid for the user.
 func (u *UserAuth) ValidateAuthToken(token string) bool {
-	err := u.Retrieve(torque.DBConn) // Lookup from the database
-	if err != nil {                  // User not found
+	err := u.Retrieve(torque.DB) // Lookup from the database
+	if err != nil {              // User not found
 		log.Printf("User %s not found", u.Username)
 		return false
 	}
@@ -152,8 +152,8 @@ func (u *UserAuth) ValidateAuthToken(token string) bool {
 */
 
 // Create inserts a new UserAuth row into the database
-func (u *UserAuth) Create(conn *sqlx.DB) error {
-	_, err := conn.Exec(`
+func (u *UserAuth) Create(db *sqlx.DB) error {
+	_, err := db.Exec(`
 	INSERT INTO users.UserAuth (
 		id,
 		username,
@@ -185,8 +185,8 @@ func (u *UserAuth) Create(conn *sqlx.DB) error {
 }
 
 // Retrieve a UserAuth from the DB by filtering on Username
-func (u *UserAuth) Retrieve(conn *sqlx.DB) error {
-	err := conn.QueryRow(`
+func (u *UserAuth) Retrieve(db *sqlx.DB) error {
+	err := db.QueryRow(`
 	SELECT (
 		id,
 		username,
@@ -212,8 +212,8 @@ func (u *UserAuth) Retrieve(conn *sqlx.DB) error {
 // TODO(jdb) Might be a bad idea to override everything - kind of implies you'l
 // want to RETRIEVE the existing record, apply changes, then UPDATE the row.
 // Or maybe we should implement PATCH for partial updates.
-func (u *UserAuth) Update(conn *sqlx.DB) error {
-	_, err := conn.Exec(`
+func (u *UserAuth) Update(db *sqlx.DB) error {
+	_, err := db.Exec(`
 	UPDATE users.UserAuth
 	SET account_created='$2',
 		enabled='$3',
@@ -244,8 +244,8 @@ func (u *UserAuth) Update(conn *sqlx.DB) error {
 // Delete removes a UserAuth record from the database. In most cases it will
 // probably be best practice to simply flag a user as disabled via a PUT, but
 // we do also need to expose this ability.
-func (u *UserAuth) Delete(conn *sqlx.DB) error {
-	err := conn.QueryRow(`
+func (u *UserAuth) Delete(db *sqlx.DB) error {
+	err := db.QueryRow(`
 	DELETE FROM users.UserAuth
 	WHERE username=$1`, u.Username).Scan(u)
 	if err != nil {
@@ -270,7 +270,7 @@ func (u *UserAuth) HandlePost(w http.ResponseWriter, req *http.Request) {
 	// Create user account
 	u = NewUserAccount(username, password)
 	// Save to database
-	if err := u.Create(torque.DBConn); err != nil {
+	if err := u.Create(torque.DB); err != nil {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
@@ -285,7 +285,7 @@ func (u *UserAuth) HandleGet(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	u.ID = userID
-	if err = u.Retrieve(torque.DBConn); err != nil {
+	if err = u.Retrieve(torque.DB); err != nil {
 		http.NotFound(w, req)
 		return
 	}
@@ -306,7 +306,7 @@ func (u *UserAuth) HandlePut(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
 	}
-	if err = u.Update(torque.DBConn); err != nil {
+	if err = u.Update(torque.DB); err != nil {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
@@ -322,7 +322,7 @@ func (u *UserAuth) HandleDelete(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	u.ID = userID
-	if err = u.Delete(torque.DBConn); err != nil {
+	if err = u.Delete(torque.DB); err != nil {
 		http.NotFound(w, req)
 		return
 	}
