@@ -20,7 +20,7 @@ var (
 		Weight:    180.76,
 		Comment:   "This is only a test",
 	}
-	db *sql.DB
+	db *sqlx.DB
 )
 
 func init() {

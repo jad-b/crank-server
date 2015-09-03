@@ -102,7 +102,7 @@ func NewUserAccount(username, password string) *UserAuth {
 // Authorize creates a new auth token and updates its metadata fields.
 // It expects that the previous User record has been fully loaded from the
 // database, else you risk overwriting an existing record!
-func (u *UserAuth) Authorize(conn *sql.DB) error {
+func (u *UserAuth) Authorize(conn *sqlx.DB) error {
 	token, err := GenerateRandomString(AuthTokenLength)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (u *UserAuth) ValidateAuthToken(token string) bool {
 */
 
 // Create inserts a new UserAuth row into the database
-func (u *UserAuth) Create(conn *sql.DB) error {
+func (u *UserAuth) Create(conn *sqlx.DB) error {
 	_, err := conn.Exec(`
 	INSERT INTO users.UserAuth (
 		id,
@@ -185,7 +185,7 @@ func (u *UserAuth) Create(conn *sql.DB) error {
 }
 
 // Retrieve a UserAuth from the DB by filtering on Username
-func (u *UserAuth) Retrieve(conn *sql.DB) error {
+func (u *UserAuth) Retrieve(conn *sqlx.DB) error {
 	err := conn.QueryRow(`
 	SELECT (
 		id,
@@ -212,7 +212,7 @@ func (u *UserAuth) Retrieve(conn *sql.DB) error {
 // TODO(jdb) Might be a bad idea to override everything - kind of implies you'l
 // want to RETRIEVE the existing record, apply changes, then UPDATE the row.
 // Or maybe we should implement PATCH for partial updates.
-func (u *UserAuth) Update(conn *sql.DB) error {
+func (u *UserAuth) Update(conn *sqlx.DB) error {
 	_, err := conn.Exec(`
 	UPDATE users.UserAuth
 	SET account_created='$2',
@@ -244,7 +244,7 @@ func (u *UserAuth) Update(conn *sql.DB) error {
 // Delete removes a UserAuth record from the database. In most cases it will
 // probably be best practice to simply flag a user as disabled via a PUT, but
 // we do also need to expose this ability.
-func (u *UserAuth) Delete(conn *sql.DB) error {
+func (u *UserAuth) Delete(conn *sqlx.DB) error {
 	err := conn.QueryRow(`
 	DELETE FROM users.UserAuth
 	WHERE username=$1`, u.Username).Scan(u)

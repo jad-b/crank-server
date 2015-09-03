@@ -16,7 +16,7 @@ type CommandLineActor interface {
 }
 
 // ActOnDB requests the actor perform it's correct method against the database.
-func ActOnDB(actor DBActor, action string, conn *sql.DB) error {
+func ActOnDB(actor DBActor, action string, conn *sqlx.DB) error {
 	switch action {
 	case "create":
 		return actor.Create(conn)

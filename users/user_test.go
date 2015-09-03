@@ -21,7 +21,7 @@ var (
 		// Generate a random user ID for working with
 		Path: "users",
 	}
-	DBConn *sql.DB
+	DBConn *sqlx.DB
 )
 
 func init() {

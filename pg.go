@@ -29,19 +29,19 @@ var (
 	// PsqlPassword is the Postgresql database user's password
 	PsqlPassword = flag.String("psql-password", "", "Postgresql password")
 	// PsqlDB is the Postgresql databse name
-	PsqlDB = flag.String("psql-db", "", "Postgresql DB")
+	PsqlDB = flag.String("psql-db", "", "Postgresqlx.DB")
 	// PsqlConf is a filepath to a configuration file
 	PsqlConf = flag.String("psql-conf", "pgconf.json", "Configuration file for DB connection")
 	// DBConn represents an open connection to a Postgres DB
-	DBConn *sql.DB
+	DBConn *sqlx.DB
 )
 
 // DBActor defines an object which implements basic data operations
 type DBActor interface {
-	Create(*sql.DB) error
-	Retrieve(*sql.DB) error
-	Update(*sql.DB) error
-	Delete(*sql.DB) error
+	Create(*sqlx.DB) error
+	Retrieve(*sqlx.DB) error
+	Update(*sqlx.DB) error
+	Delete(*sqlx.DB) error
 }
 
 // PostgresConfig is the minimal config needed to connect to a Postgres database.
@@ -72,8 +72,8 @@ func (conf *PostgresConfig) SafeString() string {
 	return fmt.Sprintf("postgres://%s@%s/%s", conf.User, conf.Host, conf.Database)
 }
 
-// OpenDBConnection opens and returns a connection to the Postgresql DB
-func OpenDBConnection(conf *PostgresConfig) *sql.DB {
+// OpenDBConnection opens and returns a connection to the Postgresqlx.DB
+func OpenDBConnection(conf *PostgresConfig) *sqlx.DB {
 	conn, err := sql.Open("postgres", conf.buildPGURL())
 	if err != nil {
 		log.Fatalf("Can't connect to db: %s", err)

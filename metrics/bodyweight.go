@@ -55,7 +55,7 @@ func (bw *Bodyweight) ParseFlags(action string, args []string) {
 */
 
 // Create inserts a new bodyweight entry into the DB.
-func (bw *Bodyweight) Create(conn *sql.DB) error {
+func (bw *Bodyweight) Create(conn *sqlx.DB) error {
 	_, err := conn.Exec(`
 	INSERT INTO metrics.bodyweight (timestamp, weight, comment)
 	VALUES ($1, $2, $3)`,
@@ -67,7 +67,7 @@ func (bw *Bodyweight) Create(conn *sql.DB) error {
 }
 
 // Retrieve does a lookup for the corresponding bodyweight record by timestamp.
-func (bw *Bodyweight) Retrieve(conn *sql.DB) error {
+func (bw *Bodyweight) Retrieve(conn *sqlx.DB) error {
 	log.Printf("Looking up Bodyweight record from %s from DB", bw.Timestamp)
 	err := conn.QueryRow(`
 	SELECT (timestamp, weight, comment)
@@ -81,7 +81,7 @@ func (bw *Bodyweight) Retrieve(conn *sql.DB) error {
 }
 
 // Update modifies the matching row in the DB by timestamp.
-func (bw *Bodyweight) Update(conn *sql.DB) error {
+func (bw *Bodyweight) Update(conn *sqlx.DB) error {
 	// Update record in database
 	// TODO Only overwrite with provided fields. Maybe by building the SQL
 	// statement string w/ conditional logic?
@@ -97,7 +97,7 @@ func (bw *Bodyweight) Update(conn *sql.DB) error {
 }
 
 // Delete removes the row from the DB
-func (bw *Bodyweight) Delete(conn *sql.DB) error {
+func (bw *Bodyweight) Delete(conn *sqlx.DB) error {
 	// Lookup record by timestamp
 	err := conn.QueryRow(`
 	DELETE FROM metrics.bodyweight
