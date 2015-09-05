@@ -1,5 +1,6 @@
 ---
 #include: metrics/metrics.yaml
+#include: training/training.yaml
 swagger: '2.0'
 info:
   title: Torque API

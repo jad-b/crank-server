@@ -3,11 +3,34 @@ tags:
   - training
   - workouts
   - exercises
+parameters:
+  workoutParam:
+    name: workout_id
+    type: string
+    in: path
+    required: true
+    description: The id of the workout to retrieve.
+  setParam:
+    name: set_id
+    type: string
+    in: path
+    required: true
+    description: The id of a set to retrieve.
+  exerciseParam:
+    name: exercise_id
+    type: string
+    in: path
+    required: true
+    description: The id of a exercise to retrieve.
+
+# URL routes for this api
 paths:
   /exercises:
     get:
       summary: Get an ExerciseMeta array.
       description: Retrieve a paginated array of all of our exercises
+      parameters:
+        - "$ref": "#/parameters/pageParam"
       responses:
         200:
           description: An array of ExerciseMeta resources
@@ -24,7 +47,6 @@ paths:
       summary: Get an ExerciseMeta.
       description: Retrieve detailed information about a specific ExerciseMeta.
       parameters:
-        - "$ref": "#/parameters/pageParam"
         - name: name
           in: path
           description: The name of the ExerciseMeta to retrieve
@@ -40,7 +62,7 @@ paths:
             schema:
               $ref: '#/definitions/Error'
   /workouts:
-    post:
+    post: # Generate a new workout
       summary: Create a Workout.
       description: Generate a new workout for the provided muscle group.
       parameters:
@@ -58,16 +80,28 @@ paths:
             description: Unexpected error
             schema:
               $ref: '#/definitions/Error'
+    get: # Get a list of workouts
+      summary: Get an Workout array.
+      description: Retrieve a paginated array of the most recently performed workouts.
+      parameters:
+        - "$ref": "#/parameters/pageParam"
+      responses:
+        200:
+          description: An array of Workout resources
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Workout'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
   /workouts/{workout_id}:
-    get:
+    get: # Retrieve the specified workout
       summary: Get a Workout.
       description: Retrieve the specified workout.
       parameters:
-        - name: workout_id
-          in: path
-          description: The id of the workout you want to retrieve.
-          required: true
-          type: string
+        - "$ref": "#/parameters/workoutParam"
       responses:
         200:
           description: The requested workout.
@@ -78,20 +112,169 @@ paths:
             schema:
               $ref: '#/definitions/Error'
     put: # Update the specified workout
+      summary: Update a Workout.
+      description: Update the specified workout.
+      parameters:
+        - "$ref": "#/parameters/workoutParam"
+        - name: comment
+          in: formData
+          description: Any comment you would like to store for this Workout.
+          required: false
+          type: string
+      responses:
+        200:
+          description: The updated workout.
+          schema:
+            $ref: '#/definitions/Workout'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
     delete: # Delete the specifieid workout
+      summary: Delete a Workout.
+      description: Delete the specified workout.
+      parameters:
+        - "$ref": "#/parameters/workoutParam"
+      responses:
+        200:
+          description: Workout deleted.
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
   /workouts/{workout_id}/sets:
     get: # Get all of the sets under the specified workout
+      summary: Get an array of sets.
+      description: Retrieve a paginated array of all sets under a specific workout.
+      responses:
+        200:
+          description: An array of Set resources
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Set'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
   /workouts/{workout_id}/sets/{set_id}:
     get: # Get the specified set
+      summary: Get a Set.
+      description: Retrieve the specified set.
+      parameters:
+        - "$ref": "#/parameters/workoutParam"
+        - "$ref": "#/parameters/setParam"
+      responses:
+        200:
+          description: The requested set.
+          schema:
+            $ref: '#/definitions/Set'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
     put: # Update the specified set
+      summary: Update a Set.
+      description: Update the specified set.
+      parameters:
+        - "$ref": "#/parameters/workoutParam"
+        - "$ref": "#/parameters/setParam"
+        - name: completed_at
+          in: formData
+          description: UTC timestamp of when this set was completed
+          required: false
+          type: boolean
+      responses:
+        200:
+          description: The updated set.
+          schema:
+            $ref: '#/definitions/Set'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
     delete: # Delete the specified set
+      summary: Delete a set.
+      description: Delete the specified Set.
+      parameters:
+        - "$ref": "#/parameters/workoutParam"
+        - "$ref": "#/parameters/setParam"
+      responses:
+        200:
+          description: Set deleted.
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
   /workouts/{workout_id}/sets/{set_id}/exercises:
     get: # All all exercises under the specified set
+      summary: Get an array of exercises.
+      description: Retrieve a paginated array of all exercises under a specific set.
+      responses:
+        200:
+          description: An array of Exercise resources
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Exercise'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
   /workouts/{workout_id}/sets/{set_id}/exercises/{exercise_id}:
-    get: # Get the specifeid workout
-    put: # update the specified workout
-    delete: # Delete the specified workout
+    get: # Get the specified exercise
+      summary: Get an Exercise.
+      description: Retrieve the specified exercise.
+      parameters:
+        - "$ref": "#/parameters/workoutParam"
+        - "$ref": "#/parameters/setParam"
+        - "$ref": "#/parameters/exerciseParam"
+      responses:
+        200:
+          description: The requested exercise.
+          schema:
+            $ref: '#/definitions/Exercise'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
+    put: # Update the specified exercise
+      summary: Update an Exercise.
+      description: Update the specified exercise.
+      parameters:
+        - "$ref": "#/parameters/workoutParam"
+        - "$ref": "#/parameters/setParam"
+        - "$ref": "#/parameters/exerciseParam"
+        - name: comment
+          in: formData
+          description: Any comment you would like to store for this exercise.
+          required: false
+          type: string
+      responses:
+        200:
+          description: The updated exercise.
+          schema:
+            $ref: '#/definitions/Exercise'
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
+    delete: # Delete the specified exercise
+      summary: Delete an exercise.
+      description: Delete the specified Exercise.
+      parameters:
+        - "$ref": "#/parameters/workoutParam"
+        - "$ref": "#/parameters/setParam"
+        - "$ref": "#/parameters/exerciseParam"
+      responses:
+        200:
+          description: Exercise deleted.
+        default:
+            description: Unexpected error
+            schema:
+              $ref: '#/definitions/Error'
 
+# Model definitions for this API
 definitions:
   Workout:
     properties:
