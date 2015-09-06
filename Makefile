@@ -3,6 +3,7 @@ BUILD_DIR=build
 # ?= sets a default that's overriden by an env var
 GOFLAGS?=
 TEST_ARGS?=
+TEST_BIN_ARGS?=
 
 TORQUE_PKG=github.com/jad-b/torque
 TORQUE_APPS=cli rest
@@ -31,7 +32,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 redteam:
-	go test -v github.com/jad-b/torque/redteam $(TEST_ARGS)
+	go test -v $(TEST_ARGS) github.com/jad-b/torque/redteam $(TEST_BIN_ARGS)
 
 swagger:
 	# Generate full Swagger API spec output file
