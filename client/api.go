@@ -48,7 +48,7 @@ func (t *TorqueAPI) Authenticate(username, password string) error {
 	if resp.StatusCode != 200 { // Invalid creds
 		torque.LogResponse(resp)
 		var errResp torque.ErrorResponse
-		err = torque.ReadJSONResponse(resp, &errResp)
+		err = torque.ReadJSONResponse(resp.Body, &errResp)
 		if err != nil {
 			return errors.New("Failed to read authentication response body")
 		}
@@ -56,7 +56,7 @@ func (t *TorqueAPI) Authenticate(username, password string) error {
 	}
 
 	// Parse the response into a User object
-	err = torque.ReadJSONResponse(resp, &t.User)
+	err = torque.ReadJSONResponse(resp.Body, &t.User)
 	if err != nil {
 		return err
 	}
