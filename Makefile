@@ -37,6 +37,10 @@ swagger:
 	# Generate full Swagger API spec output file
 	./swaggregate.py -m main.yaml -o swagger.yaml
 
-.PHONY: clean redteam all
+# Run goimports on every Go file
+imports:
+	find . ! -readable -prune -name '*.go'  -exec goimports -w {} \;
+
+.PHONY: clean redteam imports all
 .PHONY: $(BINARIES)
 .PHONY: $(APPS)
