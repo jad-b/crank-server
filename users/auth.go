@@ -51,6 +51,27 @@ var (
 	AuthTokenLifespan = time.Hour * 1
 )
 
+// HandleAuthentication validates username & password and returns a User object
+// with a new AuthToken, or an Unauthorized error.
+func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
+	username, password, ok := req.BasicAuth()
+	if !ok {
+		w.Header().Set("WWW-Authenticate", "Your bad")
+		http.Error(w, "Failed to retrieve credentials from request", http.StatusUnauthorized)
+		return
+	}
+	log.Printf("Authentication request from %s", username)
+	// Check the credentials
+	user := UserAuth{Username: username}
+	ok = user.ValidatePassword(password)
+	if !ok {
+		e := torque.ErrorResponse{"Invalid credentials"}
+		w.Header().Set("WWW-Authenticate", e.Error())
+		torque.HTTPError(w, e, http.StatusUnauthorized)
+		return
+	}
+}
+
 // DefaultHash applies a one-way bcrypt hash to a string.
 // It returns the resulting hash, the salt used, and the cost (power of two of
 // iterations to be performed). Good for creating passwords.

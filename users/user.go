@@ -13,43 +13,35 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// UserAuthSQL is SQL for creating the users.UserAuths table
 const (
-	UserAuthSQL = `
-CREATE TABLE users.UserAuth (
-  "id" integer PRIMARY KEY,
-  "username" text NOT NULL UNIQUE,
-  "account_created" timestamp(0) with time zone NOT NULL,
-  "enabled" boolean DEFAULT TRUE,
-  "superuser" boolean DEFAULT FALSE,
-  "password_hash" text NOT NULL,
-  "password_salt" text NOT NULL,
-  "cost" integer NOT NULL,
-  "current_token" text,
-  "token_created" timestamp(0) with time zone,
-  "token_last_used" timestamp(0) with time zone
-);`
+	userAuthTableName = "user_auth"
 )
 
-// HandleAuthentication validates username & password and returns a User object
-// with a new AuthToken, or an Unauthorized error.
-func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
-	username, password, ok := req.BasicAuth()
-	if !ok {
-		w.Header().Set("WWW-Authenticate", "Your bad")
-		http.Error(w, "Failed to retrieve credentials from request", http.StatusUnauthorized)
-		return
-	}
-	log.Printf("Authentication request from %s", username)
-	// Check the credentials
-	user := UserAuth{Username: username}
-	ok = user.ValidatePassword(password)
-	if !ok {
-		e := torque.ErrorResponse{"Invalid credentials"}
-		w.Header().Set("WWW-Authenticate", e.Error())
-		torque.HTTPError(w, e, http.StatusUnauthorized)
-		return
-	}
+var (
+	// UserAuthTable describes the SQL fields
+	userAuthTable = `
+id serial PRIMARY KEY,
+username text NOT NULL UNIQUE,
+account_created timestamp(0) WITH time zone NOT NULL,
+enabled boolean DEFAULT TRUE,
+superuser boolean DEFAULT FALSE,
+password_hash text NOT NULL,
+password_salt text NOT NULL,
+cost integer NOT NULL,
+current_token text,
+token_created timestamp(0) WITH time zone,
+token_last_used timestamp(0) WITH time zone`
+)
+
+// CreateTableUserAuth creates the UserAuth table
+func CreateTableUserAuth(db *sqlx.DB) error {
+	err := torque.CreateTable(
+		db,
+		Schema,
+		userAuthTableName,
+		userAuthTable,
+		true)
+	return err
 }
 
 // UserAuth holds the auth token data mapped to a UserAuth ID.
@@ -61,22 +53,22 @@ type UserAuth struct {
 	ID int `json:"id"`
 	// Keep username close to passwordHash for authentication calls
 	Username       string    `json:"username"`
-	AccountCreated time.Time `json:"account_created"`
+	AccountCreated time.Time `json:"account_created" db:"account_created"`
 	Enabled        bool      `json:"enabled"`
 	Superuser      bool      `json:"superuser"`
 	// Salt used to hash the password
-	PasswordSalt string `json:"-"`
+	PasswordSalt string `json:"-" db:"password_salt"`
 	// Type of hash used
-	PasswordHash string `json:"-"`
+	PasswordHash string `json:"-" db:"password_hash"`
 
 	// Power-of-two times we iterated over the stored password when hashing
 	Cost int `json:"-"`
 
 	// Currently active auth token
-	CurrentToken string    `json:"token"`
-	TokenCreated time.Time `json:"timestamp"`
+	CurrentToken string    `json:"current_token" db:"current_token"`
+	TokenCreated time.Time `json:"token_created" db:"token_created"`
 	// Last time the token was used in an API request
-	TokenLastUsed time.Time `json:"token_last_used"`
+	TokenLastUsed time.Time `json:"token_last_used" db:"token_last_used"`
 }
 
 // IsAuthenticated returns whether or not the User is authenticated. This
@@ -92,6 +84,7 @@ func NewUserAccount(username, password string) *UserAuth {
 	hash, salt, cost := DefaultHash(password)
 	return &UserAuth{
 		Username:       username,
+		Enabled:        true,
 		PasswordHash:   hash,
 		PasswordSalt:   salt,
 		Cost:           cost,
@@ -153,9 +146,8 @@ func (u *UserAuth) ValidateAuthToken(token string) bool {
 
 // Create inserts a new UserAuth row into the database
 func (u *UserAuth) Create(db *sqlx.DB) error {
-	_, err := db.Exec(`
-	INSERT INTO users.UserAuth (
-		id,
+	_, err := db.NamedExec(fmt.Sprintf(`
+	INSERT INTO %s.%s (
 		username,
 		account_created,
 		enabled,
@@ -165,47 +157,33 @@ func (u *UserAuth) Create(db *sqlx.DB) error {
 		cost,
 		current_token,
 		token_created,
-		token_last_used)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-		u.ID,
-		u.Username,
-		u.AccountCreated,
-		u.Enabled,
-		u.Superuser,
-		u.PasswordHash,
-		u.PasswordSalt,
-		u.Cost,
-		u.CurrentToken,
-		u.TokenCreated,
-		u.TokenLastUsed)
-	if err != nil {
-		return err
-	}
-	return nil
+		token_last_used
+	) VALUES (
+		:username,
+		:account_created,
+		:enabled,
+		:superuser,
+		:password_hash,
+		:password_salt,
+		:cost,
+		:current_token,
+		:token_created,
+		:token_last_used
+	)`, Schema, userAuthTableName), u)
+	return err
 }
 
 // Retrieve a UserAuth from the DB by filtering on Username
 func (u *UserAuth) Retrieve(db *sqlx.DB) error {
-	err := db.QueryRow(`
-	SELECT (
-		id,
-		username,
-		account_created,
-		enabled,
-		superuser,
-		password_hash,
-		password_salt,
-		cost,
-		current_token,
-		token_created,
-		token_last_used)
-	FROM users.UserAuth
-	WHERE username=$1`,
-		u.Username).Scan(u)
-	if err != nil {
-		return err
-	}
-	return nil
+	return db.Get(
+		u,
+		fmt.Sprintf(`
+			SELECT *
+			FROM %s.%s
+			WHERE username=$1`,
+			Schema,
+			userAuthTableName),
+		u.Username)
 }
 
 // Update a user entry in the database
@@ -213,45 +191,38 @@ func (u *UserAuth) Retrieve(db *sqlx.DB) error {
 // want to RETRIEVE the existing record, apply changes, then UPDATE the row.
 // Or maybe we should implement PATCH for partial updates.
 func (u *UserAuth) Update(db *sqlx.DB) error {
-	_, err := db.Exec(`
-	UPDATE users.UserAuth
-	SET account_created='$2',
-		enabled='$3',
-		superuser='$4',
-		password_hash='$5',
-		password_salt='$6',
-		cost='$7',
-		current_token='$8',
-		token_created='$9',
-		token_last_used='$10')
-	WHERE username=$1`,
-		u.Username,
-		u.AccountCreated,
-		u.Enabled,
-		u.Superuser,
-		u.PasswordHash,
-		u.PasswordSalt,
-		u.Cost,
-		u.CurrentToken,
-		u.TokenCreated,
-		u.TokenLastUsed)
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := db.NamedExec(
+		fmt.Sprintf(`
+			UPDATE %s.%s
+			SET
+				account_created=:account_created,
+				enabled=:enabled,
+				superuser=:superuser,
+				password_hash=:password_hash,
+				password_salt=:password_salt,
+				cost=:cost,
+				current_token=:current_token,
+				token_created=:token_created,
+				token_last_used=:token_last_used
+			WHERE username=:username`,
+			Schema,
+			userAuthTableName),
+		u)
+	return err
 }
 
 // Delete removes a UserAuth record from the database. In most cases it will
 // probably be best practice to simply flag a user as disabled via a PUT, but
 // we do also need to expose this ability.
 func (u *UserAuth) Delete(db *sqlx.DB) error {
-	err := db.QueryRow(`
-	DELETE FROM users.UserAuth
-	WHERE username=$1`, u.Username).Scan(u)
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := db.NamedExec(
+		fmt.Sprintf(`
+			DELETE FROM %s.%s
+			WHERE username=:username`,
+			Schema,
+			userAuthTableName),
+		u)
+	return err
 }
 
 /*
