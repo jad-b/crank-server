@@ -1,0 +1,33 @@
+---
+#include: metrics/metrics.yaml
+swagger: '2.0'
+info:
+  title: Torque API
+  description: API for all things fitness-y
+  version: '1.0.0'
+# the domain of the service
+host: torque.com
+# array of all supported schemes
+schemes:
+  - https
+produces:
+  - application/json
+parameters:
+  pageParam:
+    name: page
+    type: integer
+    format: int32
+    in: query
+    required: false
+    description: The page of a paginated result to retrieve
+paths: {}
+definitions:
+  Error:
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      fields:
+        type: string
