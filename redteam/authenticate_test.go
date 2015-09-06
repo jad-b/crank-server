@@ -1,3 +1,5 @@
+// +build test rest
+
 package redteam
 
 import (
