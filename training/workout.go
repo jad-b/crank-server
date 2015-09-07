@@ -3,8 +3,6 @@ package api
 import (
 	"net/http"
 	"time"
-
-	"github.com/jad-b/torque"
 )
 
 /*

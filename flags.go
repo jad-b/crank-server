@@ -1,30 +1,32 @@
 package torque
 
 import (
-	"database/sql"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // CommandLineActor is capable of parsing and acting upon commmand-line arguments
 type CommandLineActor interface {
 	DBActor
-	RESTfulClient
 	ParseFlags(action string, args []string)
 }
 
 // ActOnDB requests the actor perform it's correct method against the database.
-func ActOnDB(actor DBActor, action string, conn *sql.DB) error {
+func ActOnDB(actor DBActor, action string, db *sqlx.DB) error {
 	switch action {
 	case "create":
-		return actor.Create(conn)
+		return actor.Create(db)
 	case "retrieve":
-		return actor.Retrieve(conn)
+		return actor.Retrieve(db)
 	case "update":
-		return actor.Update(conn)
+		return actor.Update(db)
 	case "delete":
-		return actor.Delete(conn)
+		return actor.Delete(db)
 	default:
 		return fmt.Errorf("%s is an invalid action", action)
 	}
@@ -32,16 +34,16 @@ func ActOnDB(actor DBActor, action string, conn *sql.DB) error {
 
 // ActOnWebServer requests the actor perform it's correct method against a web
 // server.
-func ActOnWebServer(actor RESTfulClient, action, serverURL string) (*http.Response, error) {
+func ActOnWebServer(action, serverURL string) (*http.Response, error) {
 	switch action {
 	case "create":
-		return actor.HTTPPost(serverURL)
+		return nil, nil
 	case "retrieve":
-		return actor.HTTPGet(serverURL)
+		return nil, nil
 	case "update":
-		return actor.HTTPPut(serverURL)
+		return nil, nil
 	case "delete":
-		return actor.HTTPDelete(serverURL)
+		return nil, nil
 	default:
 		return nil, fmt.Errorf("%s is an invalid action", action)
 	}
@@ -57,12 +59,33 @@ func (ts *TimestampFlag) String() string {
 // Set reads the raw string value into a TimestampFlag, or dies
 // trying...actually it just returns nil.
 func (ts *TimestampFlag) Set(value string) error {
-	// TODO Change to a  list of valid timestamp formats
-	MyTimeFormat := "2006Jan21504"
-	t, err := time.Parse(MyTimeFormat, value)
+	t, err := ParseTimestamp(value)
 	if err != nil {
 		return err
 	}
 	*ts = TimestampFlag(t)
+	return nil
+}
+
+// HostPortFlag handles converting a "host:port" string into a full-fledged
+// url.URL
+type HostPortFlag url.URL
+
+// String calls url.URL's String() method
+func (hpf *HostPortFlag) String() string {
+	u := url.URL(*hpf)
+	return u.String()
+}
+
+// Set parses the host:port string into a valid url.URL
+func (hpf *HostPortFlag) Set(value string) error {
+	host, port, err := net.SplitHostPort(value)
+	if err != nil {
+		return err
+	}
+	hp := net.JoinHostPort(host, port)
+	*hpf = HostPortFlag(url.URL{
+		Host: hp,
+	})
 	return nil
 }
