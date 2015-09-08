@@ -234,15 +234,20 @@ func (u *UserAuth) HandlePost(w http.ResponseWriter, req *http.Request) {
 	// Retrieve username & password from Basic-Auth header
 	username, password, ok := req.BasicAuth()
 	if !ok {
-		http.Error(w, "No username and password provided for account creation",
+		http.Error(w,
+			"No username and password provided for account creation",
 			http.StatusBadRequest)
 		return
 	}
-	// Create user account
+	// Setup user account
 	u = NewUserAccount(username, password)
 	// Save to database
 	if err := u.Create(torque.DB); err != nil {
-		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
+		http.Error(
+			w,
+			fmt.Sprintf("Failed to create user account %s in database",
+				u.Username),
+			http.StatusInternalServerError)
 		return
 	}
 	torque.WriteOkayJSON(w, u)
