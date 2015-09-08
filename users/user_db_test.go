@@ -8,12 +8,6 @@ import (
 	"github.com/jad-b/torque"
 )
 
-var (
-	username = "EzekielSparks"
-	password = "BuildABetterButterRobot"
-	user     = NewUserAccount(username, password)
-)
-
 func TestCreateUsersSchema(t *testing.T) {
 	db := torque.Connect()
 	defer db.Close()

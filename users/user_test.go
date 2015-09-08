@@ -16,6 +16,7 @@ import (
 var (
 	username = "EzekielSparks"
 	password = "BuildABetterButterRobot"
+	user     = NewUserAccount(username, password)
 	testURL  = url.URL{
 		Scheme: "http",
 		Host:   "localhost:18000",
