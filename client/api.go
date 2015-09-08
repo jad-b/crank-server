@@ -35,7 +35,7 @@ func NewTorqueAPI(serverURL string) *TorqueAPI {
 // Authenticate logs the User in on the Torque Server.
 // This is a client-side call.
 func (t *TorqueAPI) Authenticate(username, password string) error {
-	req, err := buildAuthenticationRequest(t.ServerURL.String(), username, password)
+	req, err := buildAuthenticationRequest(t.ServerURL.Host, username, password)
 	if err != nil {
 		return err
 	}
@@ -64,12 +64,11 @@ func (t *TorqueAPI) Authenticate(username, password string) error {
 }
 
 // Separate for testing purposes
-func buildAuthenticationRequest(serverURL, username, password string) (*http.Request, error) {
+func buildAuthenticationRequest(server, username, password string) (*http.Request, error) {
 	// Prepare the URL
-	u, err := url.Parse(serverURL)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse server URL: %s", serverURL)
-	}
+	// TODO Switch to https
+	u := url.URL{Scheme: "http", Host: server}
+	// Append the Authentication path to our URL
 	u.Path = torque.SlashJoin(u.Path, "authenticate")
 	// Create the HTTP request
 	req, err := http.NewRequest("POST", u.String(), nil)
