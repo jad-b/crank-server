@@ -3,9 +3,10 @@ package users
 import (
 	crand "crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/jad-b/torque"
@@ -67,15 +68,44 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 		torque.HTTPError(w, e, http.StatusUnauthorized)
 		return
 	}
-	// Create an auth token
+	// Assign user an auth token
+	user.Authorize(torque.DB)
+	// Set Authorization header
+	w.Header().Set("Authorization", AuthHeader(&user))
+	// Send user object back with our request
+	torque.WriteOkayJSON(w, user)
+}
 
+// Separate for testing purposes
+func buildAuthenticationRequest(server, username, password string) (*http.Request, error) {
+	// Prepare the URL
+	// TODO Switch to https
+	u := url.URL{Scheme: "http", Host: server}
+	// Append the Authentication path to our URL
+	u.Path = torque.SlashJoin(u.Path, "authenticate")
+	// Create the HTTP request
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create request: %s", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(username, password)
+	return req, nil
+}
+
+// AuthHeader builds the Authorization header.
+func AuthHeader(u *UserAuth) string {
+	return fmt.Sprintf("token token=%s,id=%s", u.CurrentToken, u.ID)
 }
 
 // DefaultHash applies a one-way bcrypt hash to a string.
 // It returns the resulting hash, the salt used, and the cost (power of two of
 // iterations to be performed). Good for creating passwords.
 func DefaultHash(password string) (hash, salt string, cost int) {
-	s := NewSalt(DefaultSaltLength)
+	s, err := GenerateRandomString(DefaultSaltLength)
+	if err != nil {
+		log.Panic(err)
+	}
 	return GenerateHash(password, s, DefaultBcryptCost), s, DefaultBcryptCost
 }
 
@@ -88,20 +118,6 @@ func GenerateHash(password, salt string, cost int) string {
 		log.Panic(err)
 	}
 	return string(hashed)
-}
-
-// NewSalt generates a new, random, salt of the length specified
-func NewSalt(length int) string {
-	// Create a new []byte of size *length*
-	b := make([]byte, length)
-
-	// For each entry in our new []byte, get a random integer within the range
-	// of our constant alphabet, and insert alphabet[random_int] into our new
-	// byte array
-	for i := range b {
-		b[i] = alphabet[rand.Intn(len(alphabet))]
-	}
-	return string(b)
 }
 
 // GenerateRandomBytes returns securely generated random bytes.

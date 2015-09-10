@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/jad-b/torque"
-	"github.com/jad-b/torque/client"
 )
 
 var serverHost = "localhost"
@@ -22,7 +21,10 @@ func TestAuthentication(t *testing.T) {
 	defer u.Delete(db)
 
 	// Create a request for authentication
-	req, err := client.buildAuthenticationRequest(serverURL, username, password)
+	req, err := buildAuthenticationRequest(serverHost, username, password)
+	if err != nil {
+		t.Fatal(err)
+	}
 	resp := httptest.NewRecorder()
 
 	// See how we handle the authentication
@@ -52,7 +54,7 @@ func TestBadAccountAuthentication(t *testing.T) {
 	u := &UserAuth{Username: username}
 	u.Delete(db)
 	// Create a request for authentication
-	req, err := client.buildAuthenticationRequest(serverURL, username, password)
+	req, err := buildAuthenticationRequest(serverHost, username, password)
 	resp := httptest.NewRecorder()
 
 	// See how we handle the authentication
@@ -75,14 +77,12 @@ func TestBadAccountAuthentication(t *testing.T) {
 
 // Create a new account via the REST API
 func TestAccountCreation(t *testing.T) {
-	u := &UserAuth{}
-
-	// Create request
-	req, err := http.NewRequest("POST", testURL.String(), nil)
-	// Set whose account to make by piggy-backing on the Auth
-	req.SetBasicAuth(username, password)
+	username, password := "EzekielSparks", "Tungsten"
+	// Create a request for authentication
+	req, err := buildAuthenticationRequest(serverHost, username, password)
 	resp := httptest.NewRecorder()
 
+	u := &UserAuth{}
 	u.HandlePost(resp, req)
 
 	if resp.Code != 200 {

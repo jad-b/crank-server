@@ -60,10 +60,8 @@ type UserAuth struct {
 	PasswordSalt string `json:"-" db:"password_salt"`
 	// Type of hash used
 	PasswordHash string `json:"-" db:"password_hash"`
-
 	// Power-of-two times we iterated over the stored password when hashing
 	Cost int `json:"-"`
-
 	// Currently active auth token
 	CurrentToken string    `json:"current_token" db:"current_token"`
 	TokenCreated time.Time `json:"token_created" db:"token_created"`
@@ -104,8 +102,9 @@ func (u *UserAuth) Authorize(db *sqlx.DB) error {
 	now := time.Now()
 	u.TokenCreated = now
 	u.TokenLastUsed = now
-	// Save changes to DB
-	u.Update(db)
+	if err = u.Update(torque.DB); err != nil {
+		return err
+	}
 	return nil
 }
 
