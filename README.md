@@ -3,8 +3,7 @@
 [![Build Status](https://travis-ci.org/jad-b/Torque.svg?branch=master)](https://travis-ci.org/jad-b/Torque)
 
 __Torque__ is a platform for collecting, analyzing, and acting upon personal data.
-It is geared towards personal betterment, not treatment of serious medical conditions. Although, as they say, life is a terminal condition to have, so you never know
-will come out of a side project.
+It is geared towards personal betterment, not treatment of serious medical conditions. Although, as they say, life is a terminal condition to have, so you never know what will come out of a side project.
 
 This data (will) include everything from workouts to basic biomarkers to blood chemistry to psychological profiles.
 
