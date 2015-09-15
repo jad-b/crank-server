@@ -2,12 +2,13 @@ package users
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/jad-b/torque"
 	"github.com/jmoiron/sqlx"
@@ -102,41 +103,18 @@ func (u *UserAuth) Authorize(db *sqlx.DB) error {
 	now := time.Now()
 	u.TokenCreated = now
 	u.TokenLastUsed = now
-	if err = u.Update(torque.DB); err != nil {
-		return err
-	}
 	return nil
 }
 
 // ValidatePassword verifies if the given username/password is valid.
 func (u *UserAuth) ValidatePassword(password string) bool {
-	err := u.Retrieve(torque.DB) // Lookup from the database
-	if err != nil {              // User not found
-		log.Printf("User %s not found", u.Username)
-		return false
-	}
-	// Hash the password
-	hashed, _, _ := DefaultHash(password)
-	ok := hashed == u.PasswordHash
-	if !ok {
-		log.Print("Invalid login for ", u.Username)
-	}
-	return ok
+	err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
+	return err == nil
 }
 
 // ValidateAuthToken verifies the given auth token is valid for the user.
 func (u *UserAuth) ValidateAuthToken(token string) bool {
-	err := u.Retrieve(torque.DB) // Lookup from the database
-	if err != nil {              // User not found
-		log.Printf("User %s not found", u.Username)
-		return false
-	}
-
-	ok := token == u.CurrentToken
-	if !ok {
-		log.Print("Invalid token for ", u.Username)
-	}
-	return ok
+	return token == u.CurrentToken
 }
 
 /*

@@ -1,6 +1,12 @@
 package torque
 
-import "github.com/jmoiron/sqlx"
+import (
+	"bytes"
+	"fmt"
+	"net/http/httptest"
+
+	"github.com/jmoiron/sqlx"
+)
 
 // A collection of test utilities.
 
@@ -13,4 +19,14 @@ func Connect() *sqlx.DB {
 	// Setup our database connection
 	pgConf := LoadPostgresConfig(*PsqlConf)
 	return OpenDBConnection(pgConf)
+}
+
+// DumpRecordedResponse writes a http.ResponseRecorder to a string.
+// It takes care of resetting the Body for future ops.
+func DumpRecordedResponse(r *httptest.ResponseRecorder) string {
+	bodyCopy := *r.Body // Copy the body
+	var headerBuffer bytes.Buffer
+	r.HeaderMap.Write(&headerBuffer)
+	return fmt.Sprintf("HTTP Recorded Response (%d):\n%s\n%s\n",
+		r.Code, headerBuffer.String(), bodyCopy.String())
 }

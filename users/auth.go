@@ -61,6 +61,12 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 	log.Printf("Authentication request from %s", username)
 	// Check the credentials
 	user := UserAuth{Username: username}
+	if err := user.Retrieve(torque.DB); err != nil {
+		e := torque.ErrorResponse{"Invalid credentials"}
+		w.Header().Set(torque.HeaderAuthenticate, e.Error())
+		torque.HTTPError(w, e, http.StatusUnauthorized)
+		return
+	}
 	ok = user.ValidatePassword(password)
 	if !ok {
 		e := torque.ErrorResponse{"Invalid credentials"}
@@ -70,6 +76,12 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 	}
 	// Assign user an auth token
 	user.Authorize(torque.DB)
+	if err := user.Update(torque.DB); err != nil {
+		e := torque.ErrorResponse{"Failed to issue authorization token"}
+		w.Header().Set(torque.HeaderAuthenticate, e.Error())
+		torque.HTTPError(w, e, http.StatusInternalServerError)
+		return
+	}
 	// Set Authorization header
 	w.Header().Set(torque.HeaderAuthorization, AuthHeader(&user))
 	// Send user object back with our request

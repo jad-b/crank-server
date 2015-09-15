@@ -1,3 +1,5 @@
+// +build test db,api
+
 package users
 
 import (
@@ -17,8 +19,11 @@ func TestAuthentication(t *testing.T) {
 	defer db.Close()
 	// Create user account for testing
 	u := NewUserAccount(username, password)
-	u.Create(db)
+	if err := u.Create(db); err != nil {
+		t.Fatal(err)
+	}
 	defer u.Delete(db)
+	t.Logf("User before authentication:\n%s", torque.PrettyJSON(u))
 
 	// Create a request for authentication
 	req, err := buildAuthenticationRequest(serverHost, username, password)
@@ -31,9 +36,8 @@ func TestAuthentication(t *testing.T) {
 	HandleAuthentication(resp, req)
 
 	if resp.HeaderMap.Get(torque.HeaderAuthorization) == "" {
-		torque.LogResponse(resp)
-		t.Fatalf("Authorization header not set or empty: %s",
-			resp.HeaderMap.Get("Authorization"))
+		t.Fatalf("Authorization header not set or empty:\n%s",
+			torque.DumpRecordedResponse(resp))
 	}
 	// White-box: Check database for updated user row
 	if err := u.Retrieve(db); err != nil {
@@ -45,6 +49,7 @@ func TestAuthentication(t *testing.T) {
 		u.TokenLastUsed == nilTime {
 		t.Fatal("User row not updated for token authentication:\n%#v", u)
 	}
+	t.Logf("User after authentication:\n%s", torque.PrettyJSON(u))
 }
 
 // Try to authenticate a non-existent User account against the Authentication handler.

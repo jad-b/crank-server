@@ -1,5 +1,3 @@
-// +build test db
-
 package users
 
 import (
@@ -28,17 +26,22 @@ func init() {
 }
 
 func TestNewUserAccount(t *testing.T) {
-	u := NewUserAccount(username, password)
-	if u.PasswordHash == "" {
+	if user.PasswordHash == "" {
 		t.Error("No password was created")
 	}
-	if u.PasswordHash == password {
+	if user.PasswordHash == password {
 		t.Error("Password wasn't hashed")
 	}
-	if u.PasswordSalt == "" {
+	if user.PasswordSalt == "" {
 		t.Error("No salt created for account")
 	}
-	if u.Cost == 0 {
+	if user.Cost == 0 {
 		t.Error("No hashing-cost set on account")
+	}
+}
+
+func TestPasswordValidation(t *testing.T) {
+	if !user.ValidatePassword(password) {
+		t.Fatal("Password wasn't accepted")
 	}
 }
