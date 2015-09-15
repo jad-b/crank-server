@@ -30,8 +30,9 @@ func TestAuthentication(t *testing.T) {
 	// See how we handle the authentication
 	HandleAuthentication(resp, req)
 
-	if resp.HeaderMap.Get("Authorization") == "" {
-		t.Fatal("Authorization header not set or empty: %s",
+	if resp.HeaderMap.Get(torque.HeaderAuthorization) == "" {
+		torque.LogResponse(resp)
+		t.Fatalf("Authorization header not set or empty: %s",
 			resp.HeaderMap.Get("Authorization"))
 	}
 	// White-box: Check database for updated user row

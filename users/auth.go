@@ -54,7 +54,7 @@ var (
 func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 	username, password, ok := req.BasicAuth()
 	if !ok {
-		w.Header().Set("WWW-Authenticate", "Your bad")
+		w.Header().Set(torque.HeaderAuthenticate, "Your bad")
 		http.Error(w, "Failed to retrieve credentials from request", http.StatusUnauthorized)
 		return
 	}
@@ -64,14 +64,14 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 	ok = user.ValidatePassword(password)
 	if !ok {
 		e := torque.ErrorResponse{"Invalid credentials"}
-		w.Header().Set("WWW-Authenticate", e.Error())
+		w.Header().Set(torque.HeaderAuthenticate, e.Error())
 		torque.HTTPError(w, e, http.StatusUnauthorized)
 		return
 	}
 	// Assign user an auth token
 	user.Authorize(torque.DB)
 	// Set Authorization header
-	w.Header().Set("Authorization", AuthHeader(&user))
+	w.Header().Set(torque.HeaderAuthorization, AuthHeader(&user))
 	// Send user object back with our request
 	torque.WriteOkayJSON(w, user)
 }

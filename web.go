@@ -11,6 +11,12 @@ import (
 	"time"
 )
 
+// Common HTTP constants
+const (
+	HeaderAuthorization = "Authorization"
+	HeaderAuthenticate  = "WWW-Authenticate"
+)
+
 var (
 	// ValidTimestamps are all approved datetime formats in Torque
 	// See RFC 1123
