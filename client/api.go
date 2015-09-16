@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -35,7 +34,7 @@ func NewTorqueAPI(serverURL string) *TorqueAPI {
 // Authenticate logs the User in on the Torque Server.
 // This is a client-side call.
 func (t *TorqueAPI) Authenticate(username, password string) error {
-	req, err := buildAuthenticationRequest(t.ServerURL.String(), username, password)
+	req, err := users.buildAuthenticationRequest(t.ServerURL.Host, username, password)
 	if err != nil {
 		return err
 	}
@@ -61,24 +60,6 @@ func (t *TorqueAPI) Authenticate(username, password string) error {
 		return err
 	}
 	return nil
-}
-
-// Separate for testing purposes
-func buildAuthenticationRequest(serverURL, username, password string) (*http.Request, error) {
-	// Prepare the URL
-	u, err := url.Parse(serverURL)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse server URL: %s", serverURL)
-	}
-	u.Path = torque.SlashJoin(u.Path, "authenticate")
-	// Create the HTTP request
-	req, err := http.NewRequest("POST", u.String(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create request: %s", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(username, password)
-	return req, nil
 }
 
 // PostJSON is a convenience wrapper for common POST functionality. This

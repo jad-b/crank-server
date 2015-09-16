@@ -2,12 +2,13 @@ package users
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/jad-b/torque"
 	"github.com/jmoiron/sqlx"
@@ -60,10 +61,8 @@ type UserAuth struct {
 	PasswordSalt string `json:"-" db:"password_salt"`
 	// Type of hash used
 	PasswordHash string `json:"-" db:"password_hash"`
-
 	// Power-of-two times we iterated over the stored password when hashing
 	Cost int `json:"-"`
-
 	// Currently active auth token
 	CurrentToken string    `json:"current_token" db:"current_token"`
 	TokenCreated time.Time `json:"token_created" db:"token_created"`
@@ -104,40 +103,18 @@ func (u *UserAuth) Authorize(db *sqlx.DB) error {
 	now := time.Now()
 	u.TokenCreated = now
 	u.TokenLastUsed = now
-	// Save changes to DB
-	u.Update(db)
 	return nil
 }
 
 // ValidatePassword verifies if the given username/password is valid.
 func (u *UserAuth) ValidatePassword(password string) bool {
-	err := u.Retrieve(torque.DB) // Lookup from the database
-	if err != nil {              // User not found
-		log.Printf("User %s not found", u.Username)
-		return false
-	}
-	// Hash the password
-	hashed, _, _ := DefaultHash(password)
-	ok := hashed == u.PasswordHash
-	if !ok {
-		log.Print("Invalid login for ", u.Username)
-	}
-	return ok
+	err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
+	return err == nil
 }
 
 // ValidateAuthToken verifies the given auth token is valid for the user.
 func (u *UserAuth) ValidateAuthToken(token string) bool {
-	err := u.Retrieve(torque.DB) // Lookup from the database
-	if err != nil {              // User not found
-		log.Printf("User %s not found", u.Username)
-		return false
-	}
-
-	ok := token == u.CurrentToken
-	if !ok {
-		log.Print("Invalid token for ", u.Username)
-	}
-	return ok
+	return token == u.CurrentToken
 }
 
 /*
@@ -234,15 +211,20 @@ func (u *UserAuth) HandlePost(w http.ResponseWriter, req *http.Request) {
 	// Retrieve username & password from Basic-Auth header
 	username, password, ok := req.BasicAuth()
 	if !ok {
-		http.Error(w, "No username and password provided for account creation",
+		http.Error(w,
+			"No username and password provided for account creation",
 			http.StatusBadRequest)
 		return
 	}
-	// Create user account
+	// Setup user account
 	u = NewUserAccount(username, password)
 	// Save to database
 	if err := u.Create(torque.DB); err != nil {
-		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
+		http.Error(
+			w,
+			fmt.Sprintf("Failed to create user account %s in database",
+				u.Username),
+			http.StatusInternalServerError)
 		return
 	}
 	torque.WriteOkayJSON(w, u)

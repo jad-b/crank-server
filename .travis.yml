@@ -2,7 +2,8 @@ language: go
 go:
   - 1.4.2
   - tip
-script: make build
 install:
-   - go get github.com/jad-b/torque
+  - go get golang.org/x/crypto/bcrypt
+  - go get github.com/jad-b/torque
+script: make build
 sudo: false
