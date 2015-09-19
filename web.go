@@ -3,8 +3,6 @@ package torque
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -15,6 +13,8 @@ import (
 const (
 	HeaderAuthorization = "Authorization"
 	HeaderAuthenticate  = "WWW-Authenticate"
+
+	MimeJSON = "application/json"
 )
 
 var (
@@ -96,6 +96,7 @@ func LogRequest(r *http.Request) {
 	b, err := httputil.DumpRequestOut(r, true)
 	if err != nil {
 		log.Print(err)
+		return
 	}
 	log.Print(string(b))
 }
@@ -116,23 +117,6 @@ func LogResponse(resp *http.Response) {
 		log.Print(err)
 	}
 	log.Print(string(b))
-}
-
-// ReadBody extracts the body from the HTTP request. If there is an error, it
-// writes it back to the response.
-func ReadBody(w http.ResponseWriter, req *http.Request) (b []byte) {
-	b, err := ioutil.ReadAll(req.Body)
-	defer req.Body.Close()
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return nil
-	}
-	return b
-}
-
-// ReadBodyTo reads the body of a request directly into a given struct.
-func ReadBodyTo(w http.ResponseWriter, req *http.Request, v interface{}) error {
-	return json.NewDecoder(req.Body).Decode(v)
 }
 
 // GetOrCreateTimestamp ensures a timestamp is attached to the Request. First it looks for
@@ -160,13 +144,14 @@ func ParseTimestamp(value string) (time.Time, error) {
 	return time.Time{}, err
 }
 
+// ReadJSONRequest reads the body of a request directly into a given struct.
+func ReadJSONRequest(req *http.Request, v interface{}) error {
+	return json.NewDecoder(req.Body).Decode(v)
+}
+
 // ReadJSONResponse unmarshals the http.Response.Body into a struct.
-func ReadJSONResponse(rc io.Reader, v interface{}) error {
-	b, err := ioutil.ReadAll(rc)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(b, v)
+func ReadJSONResponse(resp *http.Response, v interface{}) error {
+	return json.NewDecoder(resp.Body).Decode(v)
 }
 
 // WriteJSON writes the value v to the http response stream as json with standard

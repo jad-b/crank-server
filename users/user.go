@@ -211,9 +211,7 @@ func (u *UserAuth) HandlePost(w http.ResponseWriter, req *http.Request) {
 	// Retrieve username & password from Basic-Auth header
 	username, password, ok := req.BasicAuth()
 	if !ok {
-		http.Error(w,
-			"No username and password provided for account creation",
-			http.StatusBadRequest)
+		http.Error(w, "Failed to retrieve User from body", http.StatusBadRequest)
 		return
 	}
 	// Setup user account
@@ -254,7 +252,7 @@ func (u *UserAuth) HandlePut(w http.ResponseWriter, req *http.Request) {
 	}
 	u.ID = userID
 	// Parse body of PUT request into a UserAuth struct
-	err = torque.ReadBodyTo(w, req, u)
+	err = torque.ReadJSONRequest(req, u)
 	if err != nil {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return

@@ -117,7 +117,7 @@ func (bw *Bodyweight) Delete(db *sqlx.DB) error {
 
 // HandlePost creates a new bodyweight record.
 func (bw *Bodyweight) HandlePost(w http.ResponseWriter, req *http.Request) {
-	err := torque.ReadBodyTo(w, req, bw)
+	err := torque.ReadJSONRequest(req, bw)
 	if err != nil {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
@@ -149,7 +149,7 @@ func (bw *Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
 // HandlePut updates a Bodyweight resource.
 func (bw *Bodyweight) HandlePut(w http.ResponseWriter, req *http.Request) {
 	// Parse body of PUT request into a Bodyweight struct
-	err := torque.ReadBodyTo(w, req, bw)
+	err := torque.ReadJSONRequest(req, bw)
 	if err != nil {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return

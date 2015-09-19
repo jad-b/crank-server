@@ -29,11 +29,11 @@ func TestPostingBodyweight(t *testing.T) {
 	}
 
 	// Post to server
-	_, err = tAPI.Post(bw)
+	_, err = tAPI.Post(&bw)
 	torque.DieOnError(t, err)
 
 	// Retrieve record
-	resp, err := tAPI.Get(metrics.Bodyweight{UserID: tAPI.User.ID, Timestamp: now})
+	resp, err := tAPI.Get(&metrics.Bodyweight{UserID: tAPI.User.ID, Timestamp: now}, nil)
 	torque.DieOnError(t, err)
 
 	// Read bodyweight record from response

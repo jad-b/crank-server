@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http/httptest"
+	"testing"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -19,6 +20,13 @@ func Connect() *sqlx.DB {
 	// Setup our database connection
 	pgConf := LoadPostgresConfig(*PsqlConf)
 	return OpenDBConnection(pgConf)
+}
+
+// DieOnError fatally logs an error, if it's real.
+func DieOnError(t *testing.T, err error) {
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 // DumpRecordedResponse writes a http.ResponseRecorder to a string.

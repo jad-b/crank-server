@@ -4,18 +4,22 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/jad-b/torque"
 	"github.com/jad-b/torque/users"
 )
 
+// HTTPPoster tells *you* how it's gonna POST
+type HTTPPoster interface {
+	Post(url.URL) (*http.Response, error)
+}
+
 // TorqueAPI is a client-side representation of a Torque server connection.
 type TorqueAPI struct {
+	http.Client
 	ServerURL url.URL        `json:"server_url"`
 	User      users.UserAuth `json:"user"`
 }
@@ -39,15 +43,14 @@ func (t *TorqueAPI) Authenticate(username, password string) error {
 		return err
 	}
 	// Send the auth request
-	client := http.Client{}
-	resp, err := client.Do(req)
+	resp, err := t.Do(req)
 	if err != nil {
 		return errors.New("No response received from authentication request")
 	}
 	if resp.StatusCode != 200 { // Invalid creds
 		torque.LogResponse(resp)
 		var errResp torque.ErrorResponse
-		err = torque.ReadJSONResponse(resp.Body, &errResp)
+		err = torque.ReadJSONResponse(resp, &errResp)
 		if err != nil {
 			return errors.New("Failed to read authentication response body")
 		}
@@ -55,50 +58,77 @@ func (t *TorqueAPI) Authenticate(username, password string) error {
 	}
 
 	// Parse the response into a User object
-	err = torque.ReadJSONResponse(resp.Body, &t.User)
+	err = torque.ReadJSONResponse(resp, &t.User)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// PostJSON is a convenience wrapper for common POST functionality. This
-// includes setting the content-type to "application/json", and marshalling
-// structs into JSON.
-func PostJSON(serverURL string, res torque.RESTfulResource) (resp *http.Response, err error) {
+// Post is a convenience wrapper for common POST functionality.
+func (t *TorqueAPI) Post(res torque.RESTfulResource) (resp *http.Response, err error) {
 	payload, err := json.Marshal(res)
 	if err != nil {
 		return nil, err
 	}
-	// Attach our resource to the URL
-	postURL := strings.Join([]string{serverURL, res.GetResourceName()}, "/")
-	return http.Post(postURL, "application/json", bytes.NewBuffer(payload))
+	postURL := t.BuildURL(res, nil)
+	return t.Client.Post(postURL.String(), "application/json", bytes.NewBuffer(payload))
 }
 
-// PrepareGetURL converts the
-func PrepareGetURL(serverURL string, res torque.RESTfulResource) (*url.URL, error) {
-	// Turn the base URL into a safer working form; url.URL
-	u, err := url.Parse(serverURL)
-	if err != nil {
-		return &url.URL{}, err
-	}
-	// Add our resource's endpoint
-	u.Path = strings.Join([]string{serverURL, res.GetResourceName()}, "/")
-	return u, nil
+// Get retrieves a resource from the Torque server.
+func (t *TorqueAPI) Get(res torque.RESTfulResource, params url.Values) (resp *http.Response, err error) {
+	getURL := t.BuildURL(res, params).String()
+	return t.Client.Get(getURL)
 }
 
-// NewJSONRequest builds an http.Request with a content-type of
-// application/json
-func NewJSONRequest(method, serverURL string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, serverURL, body)
+// Put updates a resource on the Torque server.
+func (t *TorqueAPI) Put(res torque.RESTfulResource) (resp *http.Response, err error) {
+	payload, err := json.Marshal(res)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	return req, nil
+	putURL := t.BuildURL(res, nil).String()
+	// Build PUT request
+	req, err := http.NewRequest("PUT", putURL, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+	return t.Client.Do(req)
 }
 
-// BuildResourcePath builds the absolute URL for the UserAuth resource
-func BuildResourcePath(serverURL string, res torque.RESTfulResource) string {
-	return strings.Join([]string{serverURL, res.GetResourceName()}, "/")
+// Delete retrieves a resource from the Torque server.
+// You may provide a JSON body to pass options to the server.
+func (t *TorqueAPI) Delete(res torque.RESTfulResource, body interface{}) (resp *http.Response, err error) {
+	var payload []byte
+	if body != nil {
+		payload, err = json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
+	}
+	deleteURL := t.BuildURL(res, nil).String()
+	// Build PUT request
+	req, err := http.NewRequest("DELETE", deleteURL, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+	return t.Client.Do(req)
+}
+
+// BuildURL creates a full-fledged URL
+func (t *TorqueAPI) BuildURL(res torque.RESTfulResource, params url.Values) *url.URL {
+	// Copy the URL
+	earl := t.ServerURL
+	// Set query parameters, if they exist
+	if params != nil {
+		earl.RawQuery = params.Encode()
+	}
+	// Build the API resource path
+	earl.Path = t.BuildPath(res)
+	return &earl
+}
+
+// BuildPath builds the resource path
+func (t *TorqueAPI) BuildPath(res torque.RESTfulResource) string {
+	return torque.SlashJoin(t.ServerURL.Path, res.GetResourceName())
 }

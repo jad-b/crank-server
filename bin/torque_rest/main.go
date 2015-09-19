@@ -43,7 +43,7 @@ func runServer() {
 
 func main() {
 	flag.Parse()
-	log.SetOutput(os.Stderr)
+	log.SetOutput(os.Stdout)
 
 	runServer()
 }
