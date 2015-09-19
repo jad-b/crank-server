@@ -34,7 +34,7 @@ func NewTorqueAPI(serverURL string) *TorqueAPI {
 // Authenticate logs the User in on the Torque Server.
 // This is a client-side call.
 func (t *TorqueAPI) Authenticate(username, password string) error {
-	req, err := users.buildAuthenticationRequest(t.ServerURL.Host, username, password)
+	req, err := users.BuildAuthenticationRequest(t.ServerURL.Host, username, password)
 	if err != nil {
 		return err
 	}

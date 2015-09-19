@@ -88,8 +88,9 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 	torque.WriteOkayJSON(w, user)
 }
 
-// Separate for testing purposes
-func buildAuthenticationRequest(server, username, password string) (*http.Request, error) {
+// BuildAuthenticationRequest prepares a HTTP request for retrieving an auth
+// token.
+func BuildAuthenticationRequest(server, username, password string) (*http.Request, error) {
 	// Prepare the URL
 	// TODO Switch to https
 	u := url.URL{Scheme: "http", Host: server}
