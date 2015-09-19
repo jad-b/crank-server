@@ -301,5 +301,5 @@ func parseUserID(earl *url.URL) (int, error) {
 // GetResourceName returns the name UserAuth wishes to be referred to by in the
 // URL
 func (u *UserAuth) GetResourceName() string {
-	return torque.SlashJoin("users", u.Username)
+	return "users"
 }

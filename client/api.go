@@ -27,11 +27,12 @@ type TorqueAPI struct {
 // NewTorqueAPI instantiates a new API connection from a URL string.
 func NewTorqueAPI(serverURL string) *TorqueAPI {
 	u, err := url.Parse(serverURL)
+	// TODO Override to https
+	u.Scheme = "http"
 	if err != nil {
 		// No point in continuing if we can't connect to the server
 		log.Fatal(err)
 	}
-	// TODO(jdb) Set up HTTPS certs
 	return &TorqueAPI{ServerURL: *u}
 }
 
@@ -72,6 +73,7 @@ func (t *TorqueAPI) Post(res torque.RESTfulResource) (resp *http.Response, err e
 		return nil, err
 	}
 	postURL := t.BuildURL(res, nil)
+	log.Print(postURL.String())
 	return t.Client.Post(postURL.String(), "application/json", bytes.NewBuffer(payload))
 }
 
