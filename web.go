@@ -18,7 +18,7 @@ const (
 
 	// Scheme dictates http vs. https (or anything else, I suppose...)
 	// TODO switch to https
-	Scheme = torque.Scheme
+	Scheme = "http"
 )
 
 var (
