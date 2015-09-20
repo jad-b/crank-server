@@ -13,7 +13,7 @@ var (
 	password = "BuildABetterButterRobot"
 	user     = NewUserAccount(username, password)
 	testURL  = url.URL{
-		Scheme: "http",
+		Scheme: torque.Scheme,
 		Host:   "localhost:18000",
 		// Generate a random user ID for working with
 		Path: "users",

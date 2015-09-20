@@ -1,7 +1,9 @@
 package users
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -202,32 +204,74 @@ func (u *UserAuth) Delete(db *sqlx.DB) error {
 	return err
 }
 
+// GetUserByToken retrieves the UserAuth row using the auth token
+func GetUserByToken(db *sqlx.DB, token string) (*UserAuth, error) {
+	var user UserAuth
+	err := db.Get(
+		&user,
+		fmt.Sprintf(`
+			SELECT *
+			FROM %s.%s
+			WHERE current_token=$1`,
+			Schema,
+			userAuthTableName),
+		token)
+	return &user, err
+}
+
+// GetUserIDByToken does a User ID lookup using the Auth Token
+func GetUserIDByToken(db *sqlx.DB, token string) int {
+	var id int
+	err := db.Get(
+		&id,
+		fmt.Sprintf(`
+			SELECT id
+			FROM %s.%s
+			WHERE current_token=$1`,
+			Schema,
+			userAuthTableName),
+		token)
+	if err != nil {
+		log.Print(err)
+		return 0
+	}
+	return id
+}
+
 /*
 	RESTfulHandler
 */
 
 // HandlePost creates a new UserAuth record.
 func (u *UserAuth) HandlePost(w http.ResponseWriter, req *http.Request) {
-	// Retrieve username & password from Basic-Auth header
-	username, password, ok := req.BasicAuth()
-	if !ok {
-		http.Error(w,
-			"No username and password provided for account creation",
+	log.Print("Request: create user")
+	// Check token to check for authorization
+	token := ParseAuthToken(req.Header.Get(torque.HeaderAuthorization))
+	if !IsAuthorized(torque.DB, token) {
+		torque.HTTPError(w, errors.New("User not authorized"),
+			http.StatusUnauthorized)
+		return
+	}
+	// Extract user from request body
+	var userBody UserAuth
+	err := torque.ReadJSONRequest(req, &userBody)
+	if err != nil {
+		torque.HTTPError(w, errors.New("User not found in request body"),
 			http.StatusBadRequest)
 		return
 	}
 	// Setup user account
-	u = NewUserAccount(username, password)
+	newUser := NewUserAccount(userBody.Username, userBody.PasswordHash)
+	log.Printf("Credentials are present, creating user %s", userBody.Username)
 	// Save to database
-	if err := u.Create(torque.DB); err != nil {
-		http.Error(
+	if err := newUser.Create(torque.DB); err != nil {
+		torque.HTTPError(
 			w,
-			fmt.Sprintf("Failed to create user account %s in database",
-				u.Username),
+			fmt.Errorf("Failed to create user account %s in database", u.Username),
 			http.StatusInternalServerError)
 		return
 	}
-	torque.WriteOkayJSON(w, u)
+	torque.WriteOkayJSON(w, newUser)
 }
 
 // HandleGet returns the specified UserAuth record
@@ -254,7 +298,7 @@ func (u *UserAuth) HandlePut(w http.ResponseWriter, req *http.Request) {
 	}
 	u.ID = userID
 	// Parse body of PUT request into a UserAuth struct
-	err = torque.ReadBodyTo(w, req, u)
+	err = torque.ReadJSONRequest(req, u)
 	if err != nil {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
@@ -303,5 +347,5 @@ func parseUserID(earl *url.URL) (int, error) {
 // GetResourceName returns the name UserAuth wishes to be referred to by in the
 // URL
 func (u *UserAuth) GetResourceName() string {
-	return torque.SlashJoin("users", u.Username)
+	return "users/"
 }

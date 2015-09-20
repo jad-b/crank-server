@@ -25,7 +25,8 @@ func runServer() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/metrics/bodyweight/",
 		torque.RouteRequest(&metrics.Bodyweight{}))
-	mux.HandleFunc("/authenticate", users.HandleAuthentication)
+	mux.Handle("/authenticate/", torque.SmartHandler(users.HandleAuthentication))
+	mux.HandleFunc("/users/", torque.RouteRequest(&users.UserAuth{}))
 	// Default handler - do nothing
 	mux.HandleFunc("/", torque.LogRequestThenError)
 
@@ -43,7 +44,7 @@ func runServer() {
 
 func main() {
 	flag.Parse()
-	log.SetOutput(os.Stderr)
+	log.SetOutput(os.Stdout)
 
 	runServer()
 }

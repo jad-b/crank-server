@@ -1,10 +1,9 @@
 package torque
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -15,6 +14,13 @@ import (
 const (
 	HeaderAuthorization = "Authorization"
 	HeaderAuthenticate  = "WWW-Authenticate"
+	HeaderContentType   = "Content-Type"
+
+	MimeJSON = "application/json"
+
+	// Scheme dictates http vs. https (or anything else, I suppose...)
+	// TODO switch to https
+	Scheme = "http"
 )
 
 var (
@@ -36,7 +42,7 @@ type RESTfulResource interface {
 // interactions. It supports GET, POST, PUT, and DELETE operations, as well as
 // the ServeHTTP method required for HTTP handlers.
 // TODO(jdb) Add an `error` return to each Handle* method, along with custom
-// error types. Let the RequestHandler type generically deal with different
+// error types. Let the SmartHandler type generically deal with different
 // errors.
 type RESTfulHandler interface {
 	RESTfulResource
@@ -46,16 +52,14 @@ type RESTfulHandler interface {
 	HandleDelete(http.ResponseWriter, *http.Request)
 }
 
-// RequestHandler wraps HTTP request handling in Torque's best practices for
-// logging and error handling. Or will - right now I'm just playing around.
-// TODO(jdb) Add an `error` return value
-type RequestHandler func(http.ResponseWriter, *http.Request)
+// SmartHandler provides Torque best practices on top of HTTP request handling.
+type SmartHandler func(http.ResponseWriter, *http.Request)
 
-// TODO(jdb) Handle returned errors by type
-func (fn RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Log incoming requests
-	LogRequest(r)
-	fn(w, r)
+// ServeHTTP applies middleware steps to requests.
+func (sh SmartHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	log.Print("Handling HTTP request smartly...")
+	LogRequest(req)
+	sh(w, req)
 }
 
 // RouteRequest returns the corresponding method based on the incoming
@@ -63,41 +67,48 @@ func (fn RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //
 // Example Usage:
 //   http.HandleFunc("/foo", RouteRequest(metrics.Bodyweight{}))
-func RouteRequest(rr RESTfulHandler) func(http.ResponseWriter, *http.Request) {
-	// Accept RESTfulHandler, return f(w, req)
-	return func(w http.ResponseWriter, req *http.Request) {
-		switchByMethod(rr, req)
-	}
-}
-
-func switchByMethod(rr RESTfulHandler, req *http.Request) RequestHandler {
-	switch req.Method {
-	case "GET":
-		return rr.HandleGet
-	case "POST":
-		return rr.HandlePost
-	case "PUT":
-		return rr.HandlePut
-	case "DELETE":
-		return rr.HandleDelete
-	default:
-		return func(writer http.ResponseWriter, request *http.Request) {
-			http.Error(
-				writer,
-				fmt.Sprintf("%s is not a support HTTP method for this resource",
-					request.Method),
-				http.StatusMethodNotAllowed)
+func RouteRequest(rr RESTfulHandler) SmartHandler {
+	// Closure associates the RESTfulHandler with the normal HandleFunc
+	// function signature
+	fn := func(w http.ResponseWriter, req *http.Request) {
+		switch req.Method {
+		case "GET":
+			rr.HandleGet(w, req)
+		case "POST":
+			rr.HandlePost(w, req)
+		case "PUT":
+			rr.HandlePut(w, req)
+		case "DELETE":
+			rr.HandleDelete(w, req)
+		default:
+			func(writer http.ResponseWriter, request *http.Request) {
+				http.Error(
+					writer,
+					fmt.Sprintf("%s is not a support HTTP method for this resource",
+						request.Method),
+					http.StatusMethodNotAllowed)
+			}(w, req)
 		}
 	}
+	// Wrap all RESTful Handler routing in Torque's request handling
+	return SmartHandler(fn)
 }
 
 // LogRequest idempotently writes the http.Request to the default Logger.
-func LogRequest(r *http.Request) {
-	b, err := httputil.DumpRequestOut(r, true)
+func LogRequest(req *http.Request) {
+	b, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
-		log.Print(err)
+		log.Print("Request: ", err)
+		// Try to write the whole thing ourselves
+		var b bytes.Buffer
+		err = req.Write(&b)
+		log.Print(b.String())
+		if err != nil {
+			log.Print("Failed to write Request; ", err)
+		}
+		return
 	}
-	log.Print(string(b))
+	log.Print("Request: ", string(b))
 }
 
 // LogRequestThenError dumps the request into log output and returns an error. It is really
@@ -116,23 +127,6 @@ func LogResponse(resp *http.Response) {
 		log.Print(err)
 	}
 	log.Print(string(b))
-}
-
-// ReadBody extracts the body from the HTTP request. If there is an error, it
-// writes it back to the response.
-func ReadBody(w http.ResponseWriter, req *http.Request) (b []byte) {
-	b, err := ioutil.ReadAll(req.Body)
-	defer req.Body.Close()
-	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return nil
-	}
-	return b
-}
-
-// ReadBodyTo reads the body of a request directly into a given struct.
-func ReadBodyTo(w http.ResponseWriter, req *http.Request, v interface{}) error {
-	return json.NewDecoder(req.Body).Decode(v)
 }
 
 // GetOrCreateTimestamp ensures a timestamp is attached to the Request. First it looks for
@@ -160,13 +154,14 @@ func ParseTimestamp(value string) (time.Time, error) {
 	return time.Time{}, err
 }
 
+// ReadJSONRequest reads the body of a request directly into a given struct.
+func ReadJSONRequest(req *http.Request, v interface{}) error {
+	return json.NewDecoder(req.Body).Decode(v)
+}
+
 // ReadJSONResponse unmarshals the http.Response.Body into a struct.
-func ReadJSONResponse(rc io.Reader, v interface{}) error {
-	b, err := ioutil.ReadAll(rc)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(b, v)
+func ReadJSONResponse(resp *http.Response, v interface{}) error {
+	return json.NewDecoder(resp.Body).Decode(v)
 }
 
 // WriteJSON writes the value v to the http response stream as json with standard

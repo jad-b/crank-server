@@ -85,7 +85,8 @@ func (hpf *HostPortFlag) Set(value string) error {
 	}
 	hp := net.JoinHostPort(host, port)
 	*hpf = HostPortFlag(url.URL{
-		Host: hp,
+		Scheme: Scheme,
+		Host:   hp,
 	})
 	return nil
 }
