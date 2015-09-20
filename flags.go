@@ -85,7 +85,7 @@ func (hpf *HostPortFlag) Set(value string) error {
 	}
 	hp := net.JoinHostPort(host, port)
 	*hpf = HostPortFlag(url.URL{
-		Scheme: "http",
+		Scheme: torque.Scheme,
 		Host:   hp,
 	})
 	return nil

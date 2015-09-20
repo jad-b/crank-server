@@ -28,7 +28,7 @@ type TorqueAPI struct {
 func NewTorqueAPI(serverURL string) *TorqueAPI {
 	u, err := url.Parse(serverURL)
 	// TODO Override to https
-	u.Scheme = "http"
+	u.Scheme = torque.Scheme
 	if err != nil {
 		// No point in continuing if we can't connect to the server
 		log.Fatal(err)

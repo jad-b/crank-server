@@ -12,7 +12,7 @@ func TestAuthentication(t *testing.T) {
 	if *https {
 		torqueAddr.Scheme = "https"
 	} else {
-		torqueAddr.Scheme = "http"
+		torqueAddr.Scheme = torque.Scheme
 	}
 	t.Log("Authenticating against ", torqueAddr.String())
 	_, err := AuthenticateToServer(torqueAddr.String(), username, password)

@@ -14,7 +14,7 @@ func TestUserCreation(t *testing.T) {
 	user := &UserAuth{}
 
 	// Create request
-	u := url.URL{Scheme: "http", Host: "localhost", Path: user.GetResourceName()}
+	u := url.URL{Scheme: torque.Scheme, Host: "localhost", Path: user.GetResourceName()}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
 		t.Fatal(err)

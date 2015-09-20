@@ -93,7 +93,7 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 func BuildAuthenticationRequest(server, username, password string) (*http.Request, error) {
 	// Prepare the URL
 	// TODO Switch to https
-	u := url.URL{Scheme: "http", Host: server}
+	u := url.URL{Scheme: torque.Scheme, Host: server}
 	// Append the Authentication path to our URL
 	u.Path = torque.SlashJoin(u.Path, "authenticate")
 	// Create the HTTP request
