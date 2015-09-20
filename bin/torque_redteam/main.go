@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
 
 	"github.com/jad-b/torque"
 	"github.com/jad-b/torque/redteam"
@@ -19,6 +20,8 @@ var (
 )
 
 func main() {
+	log.SetOutput(os.Stdout)
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
 	flag.Var(&torqueAddr, "localhost:18000", "Address of Torque server")
 	flag.Parse()
 
@@ -38,7 +41,7 @@ func main() {
 			err = redteam.SetupRedteamUser(*adminUser, *adminPassword, torqueAddr.String())
 		}
 		if err != nil {
-			log.Print(err)
+			log.Fatal(err)
 		}
 	}
 }

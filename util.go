@@ -2,6 +2,7 @@ package torque
 
 import (
 	"encoding/json"
+	"log"
 	"strings"
 )
 
@@ -13,8 +14,9 @@ func SlashJoin(args ...string) string {
 // PrettyJSON pretty-prints JSON. If an error occurs, you'll get back an empty,
 // but valid, JSON structure.
 func PrettyJSON(v interface{}) string {
-	s, e := json.MarshalIndent(v, "", "\t")
-	if e != nil {
+	s, err := json.MarshalIndent(v, "", "\t")
+	if err != nil {
+		log.Print(err)
 		return "{}"
 	}
 	return string(s)

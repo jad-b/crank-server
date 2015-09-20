@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -19,14 +20,15 @@ type HTTPPoster interface {
 
 // TorqueAPI is a client-side representation of a Torque server connection.
 type TorqueAPI struct {
-	http.Client
-	ServerURL url.URL        `json:"server_url"`
-	User      users.UserAuth `json:"user"`
+	http.Client `json:"-"`
+	ServerURL   url.URL        `json:"server_url"`
+	User        users.UserAuth `json:"user"`
 }
 
 // NewTorqueAPI instantiates a new API connection from a URL string.
 func NewTorqueAPI(serverURL string) *TorqueAPI {
 	u, err := url.Parse(serverURL)
+	// Overwrite whatever was given with what Torque enforces (https)
 	u.Scheme = torque.Scheme
 	if err != nil {
 		// No point in continuing if we can't connect to the server
@@ -67,13 +69,12 @@ func (t *TorqueAPI) Authenticate(username, password string) error {
 
 // Post is a convenience wrapper for common POST functionality.
 func (t *TorqueAPI) Post(res torque.RESTfulResource) (resp *http.Response, err error) {
-	payload, err := json.Marshal(res)
+	postURL := t.BuildURL(res, nil).String()
+	req, err := t.NewRequest("POST", postURL, res, nil)
 	if err != nil {
 		return nil, err
 	}
-	postURL := t.BuildURL(res, nil)
-	log.Print(postURL.String())
-	return t.Client.Post(postURL.String(), "application/json", bytes.NewBuffer(payload))
+	return t.Client.Do(req)
 }
 
 // Get retrieves a resource from the Torque server.
@@ -84,13 +85,8 @@ func (t *TorqueAPI) Get(res torque.RESTfulResource, params url.Values) (resp *ht
 
 // Put updates a resource on the Torque server.
 func (t *TorqueAPI) Put(res torque.RESTfulResource) (resp *http.Response, err error) {
-	payload, err := json.Marshal(res)
-	if err != nil {
-		return nil, err
-	}
 	putURL := t.BuildURL(res, nil).String()
-	// Build PUT request
-	req, err := http.NewRequest("PUT", putURL, bytes.NewBuffer(payload))
+	req, err := t.NewRequest("PUT", putURL, res, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -98,22 +94,41 @@ func (t *TorqueAPI) Put(res torque.RESTfulResource) (resp *http.Response, err er
 }
 
 // Delete retrieves a resource from the Torque server.
-// You may provide a JSON body to pass options to the server.
+// You may provide JSON to pass options to the server.
 func (t *TorqueAPI) Delete(res torque.RESTfulResource, body interface{}) (resp *http.Response, err error) {
+	deleteURL := t.BuildURL(res, nil).String()
+	req, err := t.NewRequest("DELETE", deleteURL, body, nil)
+	if err != nil {
+		return nil, err
+	}
+	return t.Client.Do(req)
+}
+
+// NewRequest prepares a new HTTP request.
+// It handles filling in the appropriate auth fields.
+func (t *TorqueAPI) NewRequest(method string, url string, body interface{}, params url.Values) (*http.Request, error) {
 	var payload []byte
+	var err error
+	// Marshal body into JSON
 	if body != nil {
 		payload, err = json.Marshal(body)
 		if err != nil {
 			return nil, err
 		}
 	}
-	deleteURL := t.BuildURL(res, nil).String()
-	// Build PUT request
-	req, err := http.NewRequest("DELETE", deleteURL, bytes.NewBuffer(payload))
+	// Create HTTP Request
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
-	return t.Client.Do(req)
+	// Set headers
+	req.Header.Set(torque.HeaderContentType, torque.MimeJSON)
+	if t.User.IsAuthenticated() { // Only set if valid
+		req.Header.Set(users.AuthHeader(&t.User))
+	} else {
+		return nil, fmt.Errorf("%s is not authenticated", t.User.Username)
+	}
+	return req, nil
 }
 
 // BuildURL creates a full-fledged URL
@@ -132,4 +147,9 @@ func (t *TorqueAPI) BuildURL(res torque.RESTfulResource, params url.Values) *url
 // BuildPath builds the resource path
 func (t *TorqueAPI) BuildPath(res torque.RESTfulResource) string {
 	return torque.SlashJoin(t.ServerURL.Path, res.GetResourceName())
+}
+
+// String pretty-prints the Torque API client.
+func (t *TorqueAPI) String() string {
+	return torque.PrettyJSON(t)
 }

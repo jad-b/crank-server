@@ -7,34 +7,19 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"time"
 
 	"github.com/jad-b/torque"
+	"github.com/jmoiron/sqlx"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
-	// The alphabet constant is used to expose all of the valid characters that
-	// we can use when generating a new PasswordSalt. This constant can be
-	// safelty updated without running the risk of breaking already generated
-	// salts. Because salts are stored on a per-user basis and are only
-	// generated/replaced when a user first creates their account or creates a
-	// new password.
-	alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
 	// DefaultSaltLength is the default length for newly generated PasswordSalts
 	DefaultSaltLength = 32
 
-	// DefaultIterationCount is the default number of times to iterate over the
-	// password while hashing. Using a higher iteration count will increase the
-	// cost of an exhaustive search but will also make derivation
-	// proportionally slower. We'll likely need to fine tune the default
-	// iteration count as time goes on to provide a better user experience,
-	// while still maintaining a higher level of security. We'll store the
-	// iteration count along side each salt and hash in order to allow us the
-	// flexibility to safetly modify this default in the future.
-	DefaultIterationCount = 1000
 	// DefaultBcryptCost is the power-of-two iterations (2^cost) to apply via
 	// bcrypt when hashing.
 	DefaultBcryptCost = 12
@@ -74,6 +59,7 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 		torque.HTTPError(w, e, http.StatusUnauthorized)
 		return
 	}
+	log.Print("Authenticated ", username)
 	// Assign user an auth token
 	user.Authorize(torque.DB)
 	if err := user.Update(torque.DB); err != nil {
@@ -82,8 +68,9 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 		torque.HTTPError(w, e, http.StatusInternalServerError)
 		return
 	}
+	log.Print("Authorized ", username)
 	// Set Authorization header
-	w.Header().Set(torque.HeaderAuthorization, AuthHeader(&user))
+	w.Header().Set(AuthHeader(&user))
 	// Send user object back with our request
 	torque.WriteOkayJSON(w, user)
 }
@@ -92,10 +79,9 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 // token.
 func BuildAuthenticationRequest(server, username, password string) (*http.Request, error) {
 	// Prepare the URL
-	// TODO Switch to https
 	u := url.URL{Scheme: torque.Scheme, Host: server}
 	// Append the Authentication path to our URL
-	u.Path = torque.SlashJoin(u.Path, "authenticate")
+	u.Path = torque.SlashJoin(u.Path, "authenticate/")
 	// Create the HTTP request
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
@@ -106,9 +92,49 @@ func BuildAuthenticationRequest(server, username, password string) (*http.Reques
 	return req, nil
 }
 
+// IsAuthorized determines if A is allowed to act on B.
+// Obviously this is rudimentary, but it's a start.
+func IsAuthorized(db *sqlx.DB, token string) bool {
+	// Retrieve actor's account
+	var actor UserAuth
+	err := db.Get(
+		&actor,
+		fmt.Sprintf(`
+			SELECT
+				id,
+				username,
+				superuser
+			FROM %s.%s
+			WHERE current_token=$1`,
+			Schema,
+			userAuthTableName),
+		token)
+	if err != nil { // Token didn't exist
+		log.Print(err)
+		return false
+	}
+	// Superusers can do anything
+	if actor.Superuser {
+		log.Printf("%s is a superuser; proceeding", actor.Username)
+		return true
+	}
+	// If they're the same person, no problem
+	// return user.ID == ownerID
+	return true
+}
+
 // AuthHeader builds the Authorization header.
-func AuthHeader(u *UserAuth) string {
-	return fmt.Sprintf("token token=%s,id=%s", u.CurrentToken, u.ID)
+func AuthHeader(u *UserAuth) (string, string) {
+	return torque.HeaderAuthorization, fmt.Sprintf("token token=%s", u.CurrentToken)
+}
+
+// ParseAuthToken extracts the auth token from a string, presumably the
+// Authorization header.
+func ParseAuthToken(authHeader string) (token string) {
+	// everything after `token=` and before a comma
+	re := regexp.MustCompile(`token=(?P<token>.+)`)
+	matches := re.FindStringSubmatch(authHeader)
+	return matches[1]
 }
 
 // DefaultHash applies a one-way bcrypt hash to a string.
