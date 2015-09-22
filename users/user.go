@@ -243,18 +243,21 @@ func GetUserIDByToken(db *sqlx.DB, token string) int {
 */
 
 // HandlePost creates a new UserAuth record.
+// It's a bit of a chicken & egg problem, in that you must be an authorized user to create users.
+// Otherwise, anyone could just blast the API with user creations.
 func (u *UserAuth) HandlePost(w http.ResponseWriter, req *http.Request) {
 	log.Print("Request: create user")
-	// Check token to check for authorization
+	// Get UserID from token
 	token := ParseAuthToken(req.Header.Get(torque.HeaderAuthorization))
-	if !IsAuthorized(torque.DB, token) {
+	_, err := SwapTokenForID(torque.DB, token)
+	if err != nil {
 		torque.HTTPError(w, errors.New("User not authorized"),
 			http.StatusUnauthorized)
 		return
 	}
-	// Extract user from request body
+	// Extract user to create from request body
 	var userBody UserAuth
-	err := torque.ReadJSONRequest(req, &userBody)
+	err = torque.ReadJSONRequest(req, &userBody)
 	if err != nil {
 		torque.HTTPError(w, errors.New("User not found in request body"),
 			http.StatusBadRequest)

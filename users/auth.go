@@ -3,6 +3,7 @@ package users
 import (
 	crand "crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -92,13 +93,38 @@ func BuildAuthenticationRequest(server, username, password string) (*http.Reques
 	return req, nil
 }
 
-// IsAuthorized determines if A is allowed to act on B.
-// Obviously this is rudimentary, but it's a start.
-func IsAuthorized(db *sqlx.DB, token string) bool {
+// AuthorizeAs determines if A is allowed to act on B.
+// It returns the authorized user ID. This relies on resources supplying who
+// they *think* should be the owner.
+func AuthorizeAs(db *sqlx.DB, token string, owner int) (int, error) {
+	// Retrieve auth'd user account
+	actor, err := SwapTokenForUser(db, token)
+	if err != nil {
+		return 0, err
+	}
+	// If no resource owner was provided, it defaults to whoever owns the auth
+	// token
+	if owner == 0 {
+		return actor.ID, nil
+	}
+	// Obviously users are allowed to be themselves
+	if actor.ID == owner {
+		return owner, nil
+	}
+	// Superusers are allowed to impersonate other users
+	if actor.Superuser {
+		log.Printf("%s is a superuser; proceeding", actor.Username)
+		return owner, nil
+	}
+	return 0, errors.New("Unauthorized user")
+}
+
+// SwapTokenForUser retrieves the user using the issued auth token.
+func SwapTokenForUser(db *sqlx.DB, token string) (*UserAuth, error) {
 	// Retrieve actor's account
-	var actor UserAuth
+	var user UserAuth
 	err := db.Get(
-		&actor,
+		&user,
 		fmt.Sprintf(`
 			SELECT
 				id,
@@ -110,17 +136,27 @@ func IsAuthorized(db *sqlx.DB, token string) bool {
 			userAuthTableName),
 		token)
 	if err != nil { // Token didn't exist
-		log.Print(err)
-		return false
+		return nil, err
 	}
-	// Superusers can do anything
-	if actor.Superuser {
-		log.Printf("%s is a superuser; proceeding", actor.Username)
-		return true
+	return &user, nil
+}
+
+// SwapTokenForID retrieves the user using the issued auth token.
+func SwapTokenForID(db *sqlx.DB, token string) (int, error) {
+	var id int
+	err := db.Get(
+		&id,
+		fmt.Sprintf(`
+			SELECT id
+			FROM %s.%s
+			WHERE current_token=$1`,
+			Schema,
+			userAuthTableName),
+		token)
+	if err != nil { // Token didn't exist
+		return 0, err
 	}
-	// If they're the same person, no problem
-	// return user.ID == ownerID
-	return true
+	return id, nil
 }
 
 // AuthHeader builds the Authorization header.
