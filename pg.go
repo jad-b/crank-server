@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -83,14 +82,15 @@ func OpenDBConnection(conf *PostgresConfig) *sqlx.DB {
 
 // LoadPostgresConfig opens a PostgresConfig from a file
 func LoadPostgresConfig(confFile string) (conf *PostgresConfig) {
-	conf = &PostgresConfig{} // Use a blank configuration
-	absConfPath, err := filepath.Abs(confFile)
+	conf = &PostgresConfig{}
+	// Search upwards for the filename
+	f, err := Ascend(confFile)
 	if err != nil {
-		log.Fatal(err)
-	}
-	f, err := os.Open(absConfPath)
-	if err != nil || os.IsNotExist(err) {
-		log.Printf("No database configuration file found at %s", absConfPath)
+		if os.IsNotExist(err) { // No file found
+			log.Printf("No database configuration file found at %s", confFile)
+		} else { // Inform the user something's wrong with their config
+			log.Fatal(err)
+		}
 	} else {
 		err = json.NewDecoder(f).Decode(conf)
 		if err != nil {
@@ -100,6 +100,7 @@ func LoadPostgresConfig(confFile string) (conf *PostgresConfig) {
 	}
 
 	// Overwrite config file with command-line variables
+	// TODO Use a library for this
 	if *PsqlUser != "" {
 		conf.User = *PsqlUser
 	}
