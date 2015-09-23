@@ -31,10 +31,12 @@ func TestPostingBodyweight(t *testing.T) {
 	// Post to server
 	_, err = tAPI.Post(&bw)
 	torque.DieOnError(t, err)
+	t.Log("POST'd Bodyweight record")
 
 	// Retrieve record
 	resp, err := tAPI.Get(&metrics.Bodyweight{UserID: tAPI.User.ID, Timestamp: now}, nil)
 	torque.DieOnError(t, err)
+	t.Log("GET'd Bodyweight record")
 
 	// Read bodyweight record from response
 	var bw2 metrics.Bodyweight
@@ -43,4 +45,5 @@ func TestPostingBodyweight(t *testing.T) {
 	if bw2.Weight != bw.Weight || bw2.Comment != bw2.Comment {
 		t.Fatal("Not equal:\n%#v\n%#v", bw, bw2)
 	}
+	t.Log("POST & GET successful")
 }

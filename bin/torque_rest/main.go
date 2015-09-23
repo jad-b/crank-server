@@ -23,8 +23,8 @@ func runServer() {
 
 	// Register RESTfulHandlers
 	mux := http.NewServeMux()
-	mux.HandleFunc("/metrics/bodyweight/",
-		torque.RouteRequest(&metrics.Bodyweight{}))
+	bw := &metrics.Bodyweight{}
+	mux.HandleFunc("/"+bw.GetResourceName(), torque.RouteRequest(bw))
 	mux.Handle("/authenticate/", torque.SmartHandler(users.HandleAuthentication))
 	mux.HandleFunc("/users/", torque.RouteRequest(&users.UserAuth{}))
 	// Default handler - do nothing

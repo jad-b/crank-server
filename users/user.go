@@ -18,9 +18,6 @@ import (
 
 const (
 	userAuthTableName = "user_auth"
-)
-
-var (
 	// UserAuthTable describes the SQL fields
 	userAuthTable = `
 id serial PRIMARY KEY,
@@ -38,13 +35,12 @@ token_last_used timestamp(0) WITH time zone`
 
 // CreateTableUserAuth creates the UserAuth table
 func CreateTableUserAuth(db *sqlx.DB) error {
-	err := torque.CreateTable(
+	return torque.CreateTable(
 		db,
 		Schema,
 		userAuthTableName,
 		userAuthTable,
 		true)
-	return err
 }
 
 // UserAuth holds the auth token data mapped to a UserAuth ID.
@@ -62,7 +58,7 @@ type UserAuth struct {
 	// Salt used to hash the password
 	PasswordSalt string `json:"-" db:"password_salt"`
 	// Type of hash used
-	PasswordHash string `json:"-" db:"password_hash"`
+	PasswordHash string `json:"password_hash" db:"password_hash"`
 	// Power-of-two times we iterated over the stored password when hashing
 	Cost int `json:"-"`
 	// Currently active auth token
@@ -110,8 +106,13 @@ func (u *UserAuth) Authorize(db *sqlx.DB) error {
 
 // ValidatePassword verifies if the given username/password is valid.
 func (u *UserAuth) ValidatePassword(password string) bool {
+	log.Printf("Validating %s/%s", u.Username, password)
 	err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password))
-	return err == nil
+	if err != nil {
+		log.Print(err)
+		return false
+	}
+	return true
 }
 
 // ValidateAuthToken verifies the given auth token is valid for the user.
@@ -265,7 +266,12 @@ func (u *UserAuth) HandlePost(w http.ResponseWriter, req *http.Request) {
 	}
 	// Setup user account
 	newUser := NewUserAccount(userBody.Username, userBody.PasswordHash)
-	log.Printf("Credentials are present, creating user %s", userBody.Username)
+	if err := CheckPasswordStrength(userBody.PasswordHash); err != nil {
+		log.Printf("Password sucked: %s", userBody.PasswordHash)
+		torque.HTTPError(w, err, http.StatusBadRequest)
+		return
+	}
+	log.Printf("Credentials are present, creating %s/%s", userBody.Username, userBody.PasswordHash)
 	// Save to database
 	if err := newUser.Create(torque.DB); err != nil {
 		torque.HTTPError(
@@ -350,5 +356,5 @@ func parseUserID(earl *url.URL) (int, error) {
 // GetResourceName returns the name UserAuth wishes to be referred to by in the
 // URL
 func (u *UserAuth) GetResourceName() string {
-	return "users/"
+	return Category + "/"
 }

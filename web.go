@@ -187,7 +187,8 @@ func WriteOkayJSON(w http.ResponseWriter, v interface{}) {
 // string
 func HTTPError(w http.ResponseWriter, e error, code int) {
 	// Marhsall struct into a JSON string
-	errorJSON, err := json.MarshalIndent(e, "", "\t")
+	errResp := ErrorResponse{e.Error()}
+	errorJSON, err := json.MarshalIndent(errResp, "", "\t")
 	if err != nil {
 		log.Printf("Trouble marshalling this error: %s.\nThe user will receive a generic %s", e.Error(), genericErrorJSON)
 		errorJSON = genericErrorJSON

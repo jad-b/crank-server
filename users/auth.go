@@ -48,6 +48,7 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 	// Check the credentials
 	user := UserAuth{Username: username}
 	if err := user.Retrieve(torque.DB); err != nil {
+		log.Printf("User %s not found", username)
 		e := torque.ErrorResponse{"Invalid credentials"}
 		w.Header().Set(torque.HeaderAuthenticate, e.Error())
 		torque.HTTPError(w, e, http.StatusUnauthorized)
@@ -55,6 +56,7 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 	}
 	ok = user.ValidatePassword(password)
 	if !ok {
+		log.Printf("Invalid password for user %s", username)
 		e := torque.ErrorResponse{"Invalid credentials"}
 		w.Header().Set(torque.HeaderAuthenticate, e.Error())
 		torque.HTTPError(w, e, http.StatusUnauthorized)
@@ -64,6 +66,7 @@ func HandleAuthentication(w http.ResponseWriter, req *http.Request) {
 	// Assign user an auth token
 	user.Authorize(torque.DB)
 	if err := user.Update(torque.DB); err != nil {
+		log.Printf("Failed to authorize %s", username)
 		e := torque.ErrorResponse{"Failed to issue authorization token"}
 		w.Header().Set(torque.HeaderAuthenticate, e.Error())
 		torque.HTTPError(w, e, http.StatusInternalServerError)
@@ -219,4 +222,13 @@ func GenerateRandomBytes(n int) ([]byte, error) {
 func GenerateRandomString(s int) (string, error) {
 	b, err := GenerateRandomBytes(s)
 	return base64.URLEncoding.EncodeToString(b), err
+}
+
+// CheckPasswordStrength enforces decent password strength.
+func CheckPasswordStrength(password string) error {
+	passwordLenMin := 6
+	if len(password) < passwordLenMin {
+		return fmt.Errorf("Password length must be at least %d characters", passwordLenMin)
+	}
+	return nil
 }
