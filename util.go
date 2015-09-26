@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // SlashJoin performs a strings.Join using '/' as a separator.
@@ -56,4 +57,9 @@ func Ascend(filename string) (f *os.File, err error) {
 		dirpath, path = filepath.Dir(dirpath), filepath.Join(dirpath, filename)
 	}
 	return nil, fmt.Errorf("Unable to find %s", filename)
+}
+
+// Stamp properly formats a time.Time the Torque way.
+func Stamp(t time.Time) string {
+	return t.Format(time.StampMicro)
 }
