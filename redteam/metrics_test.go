@@ -3,6 +3,7 @@
 package redteam
 
 import (
+	"net/url"
 	"testing"
 	"time"
 
@@ -34,9 +35,10 @@ func TestPostingBodyweight(t *testing.T) {
 	t.Log("POST'd Bodyweight record")
 
 	// Retrieve record
-	resp, err := tAPI.Get(&metrics.Bodyweight{UserID: tAPI.User.ID, Timestamp: now}, nil)
+	resp, err := tAPI.Get(&bw, url.Values{"timestamp": []string{torque.Stamp(now)}})
 	torque.DieOnError(t, err)
 	t.Log("GET'd Bodyweight record")
+	torque.LogResponse(resp)
 
 	// Read bodyweight record from response
 	var bw2 metrics.Bodyweight

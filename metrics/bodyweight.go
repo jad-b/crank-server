@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -15,7 +16,7 @@ const (
 	// BodyweightSQL is the SQL required to create the Bodyweight table.
 	bodyweightTable = `
   user_id integer NOT NULL,
-  timestamp timestamp(0) with time zone NOT NULL,
+  timestamp timestamp with time zone NOT NULL,
   weight numeric(5,2) NOT NULL CHECK (weight < 1000),
   comment text,
   UNIQUE(user_id, timestamp)
@@ -67,8 +68,9 @@ func (bw *Bodyweight) ParseFlags(action string, args []string) {
 
 // Create inserts a new bodyweight entry into the DB.
 func (bw *Bodyweight) Create(db *sqlx.DB) error {
-	_, err := db.NamedExec(`
-	INSERT INTO metrics.bodyweight (
+	_, err := db.NamedExec(fmt.Sprintf(`
+	INSERT INTO %s.%s (
+		user_id,
 		timestamp,
 		weight,
 		comment
@@ -77,44 +79,49 @@ func (bw *Bodyweight) Create(db *sqlx.DB) error {
 		:timestamp,
 		:weight,
 		:comment
-	)`, bw)
+	)`, Schema, bodyweightTableName), bw)
 	return err
 }
 
 // Retrieve does a lookup for the corresponding bodyweight record by timestamp.
 func (bw *Bodyweight) Retrieve(db *sqlx.DB) error {
-	log.Printf("Looking up Bodyweight record from %s from DB", bw.Timestamp)
-	err := db.QueryRow(`
-	SELECT (timestamp, weight, comment)
-	FROM metrics.bodyweight
-	WHERE timestamp=$1`, bw.Timestamp).Scan(bw)
-	return err
+	return db.Get(
+		bw,
+		fmt.Sprintf(`
+		SELECT
+			user_id,
+			timestamp,
+			weight,
+			comment
+		FROM %s.%s
+		WHERE timestamp=$1`,
+			Schema, bodyweightTableName),
+		bw.Timestamp)
 }
 
 // Update modifies the matching row in the DB by timestamp.
 func (bw *Bodyweight) Update(db *sqlx.DB) error {
-	// Update record in database
-	// TODO Only overwrite with provided fields. Maybe by building the SQL
-	// statement string w/ conditional logic?
-	_, err := db.Exec(`
-	UPDATE metrics.bodyweight
-	SET weight=$2, comment='$3'
-	WHERE timestamp > $1`,
-		bw.Timestamp, bw.Weight, bw.Comment)
+	_, err := db.NamedExec(
+		fmt.Sprintf(`
+			UPDATE %s.%s
+			SET
+				user_id=:user_id,
+				weight=:weight,
+				comment=:comment
+			WHERE timestamp=:timestamp`,
+			Schema, bodyweightTableName),
+		bw)
 	return err
 }
 
 // Delete removes the row from the DB
 func (bw *Bodyweight) Delete(db *sqlx.DB) error {
-	// Lookup record by timestamp
-	err := db.QueryRow(`
-	DELETE FROM metrics.bodyweight
-	WHERE timestamp=$1`,
-		bw.Timestamp).Scan(bw)
-	if err != nil {
-		return err
-	}
-	return nil
+	stmt := fmt.Sprintf(`
+			DELETE FROM %s.%s
+			WHERE timestamp=:timestamp`,
+		Schema, bodyweightTableName)
+	_, err := db.NamedExec(stmt, bw)
+	return err
 }
 
 /*
@@ -140,13 +147,15 @@ func (bw *Bodyweight) HandlePost(w http.ResponseWriter, req *http.Request) {
 // HandleGet returns the related bodyweight record
 func (bw *Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
 	log.Print("Request: Retrieve Bodyweight")
-	timestamp, err := torque.GetOrCreateTimestamp(req)
+	torque.LogRequest(req)
+	var err error
+	bw.Timestamp, err = torque.GetTimestampQuery(req)
 	if err != nil {
-		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
+		http.Error(w, "Missing timestamp in query parameters", http.StatusBadRequest)
 		return
 	}
-	bw.Timestamp = timestamp
-	if err = bw.Retrieve(torque.DB); err != nil {
+	log.Printf("Retrieving %+v", bw)
+	if err := bw.Retrieve(torque.DB); err != nil {
 		http.NotFound(w, req)
 		return
 	}
@@ -174,7 +183,7 @@ func (bw *Bodyweight) HandlePut(w http.ResponseWriter, req *http.Request) {
 // HandleDelete removes the bodyweight record from the database.
 func (bw *Bodyweight) HandleDelete(w http.ResponseWriter, req *http.Request) {
 	// Retrieve timestamp from request
-	timestamp, err := torque.GetOrCreateTimestamp(req)
+	timestamp, err := torque.GetTimestampQuery(req)
 	if err != nil {
 		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
 		return
