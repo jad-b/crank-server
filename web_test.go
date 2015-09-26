@@ -15,7 +15,7 @@ func TestTimestampInRequests(t *testing.T) {
 	}
 	// Test request handler
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		ts, err := GetTimestamp(r)
+		ts, err := GetTimestampQuery(r)
 		if err != nil {
 			HTTPError(w, err, http.StatusBadRequest)
 			return
