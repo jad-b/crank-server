@@ -1,4 +1,4 @@
-#!/bin/bash -eux
+#!/bin/bash -eu
 
 FORMAT=$(echo -e "\033[1;33m%w%f\033[0m written")
 TORQUE_PID=
@@ -13,7 +13,8 @@ run_server() {
 poll_server(){
     run_server
     while inotifywait -qre close_write --format "$FORMAT" .; do
-        if [ -z ${TORQUE_PID+x} ]; then
+        if ! [  -z ${TORQUE_PID+x} ]; then
+            echo "Killing torque server..."
             kill $TORQUE_PID
             unset TORQUE_PID
         fi
