@@ -29,6 +29,7 @@ var (
 	// See RFC 1123
 	ValidTimestamps = []string{
 		time.StampMicro,
+		time.StampMilli,
 		time.RFC822,
 		time.RFC850,
 		time.ANSIC,
@@ -135,7 +136,6 @@ func LogResponse(resp *http.Response) {
 // a Query field "timestamp". Failing that, it returns the current time.
 // Query.
 func GetTimestampQuery(req *http.Request) (t time.Time, err error) {
-	log.Printf("URL Query: %v", req.URL.Query())
 	queryTime := req.URL.Query().Get("timestamp")
 	return ParseTimestamp(queryTime)
 }
