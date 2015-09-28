@@ -151,12 +151,13 @@ func (bw *Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
 	var err error
 	bw.Timestamp, err = torque.GetTimestampQuery(req)
 	if err != nil {
+		log.Print(err)
 		http.Error(w, "Missing timestamp in query parameters", http.StatusBadRequest)
 		return
 	}
 	log.Printf("Retrieving %+v", bw)
 	if err := bw.Retrieve(torque.DB); err != nil {
-		http.NotFound(w, req)
+		torque.BadRequest(w, req, "No record found")
 		return
 	}
 	log.Printf("Retrieved %+v", bw)

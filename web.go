@@ -202,3 +202,18 @@ func HTTPError(w http.ResponseWriter, e error, code int) {
 	}
 	http.Error(w, string(errorJSON), code)
 }
+
+// BadRequest returns an 400 to the user along with some debugging information.
+func BadRequest(w http.ResponseWriter, req *http.Request, msg string) {
+	e := struct {
+		Location string     `json:"location"`
+		Query    url.Values `json:"query"`
+		Message  string     `json:"error"`
+	}{
+		Location: req.URL.Path,
+		Query:    req.URL.Query(),
+		Message:  msg,
+	}
+	eJSON := PrettyJSON(e)
+	http.Error(w, eJSON, 400)
+}

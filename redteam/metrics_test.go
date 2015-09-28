@@ -21,7 +21,7 @@ func TestPostingBodyweight(t *testing.T) {
 	torque.DieOnError(t, err)
 
 	// Create BW record
-	now := time.Now()
+	now := time.Now().Truncate(time.Second)
 	bw := metrics.Bodyweight{
 		UserID:    tAPI.User.ID,
 		Timestamp: now,
@@ -38,14 +38,18 @@ func TestPostingBodyweight(t *testing.T) {
 	resp, err := tAPI.Get(&bw, url.Values{"timestamp": []string{torque.Stamp(now)}})
 	torque.DieOnError(t, err)
 	t.Log("GET'd Bodyweight record")
-	torque.LogResponse(resp)
+
+	if resp.StatusCode != 200 {
+		torque.LogResponse(resp)
+		t.Fatal("Non-200 status code returned")
+	}
 
 	// Read bodyweight record from response
 	var bw2 metrics.Bodyweight
 	err = torque.ReadJSONResponse(resp, &bw2)
 	torque.DieOnError(t, err)
 	if bw2.Weight != bw.Weight || bw2.Comment != bw2.Comment {
-		t.Fatal("Not equal:\n%#v\n%#v", bw, bw2)
+		t.Fatalf("Not equal:\n%#v\n%#v", bw, bw2)
 	}
 	t.Log("POST & GET successful")
 }
