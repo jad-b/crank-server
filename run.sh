@@ -12,7 +12,9 @@ run_server() {
 
 poll_server(){
     # kill any other server, just in case
-    kill $(pgrep -u $USER torque_rest)
+    if [ $(pgrep -u $USER torque_rest) ]; then
+        kill $(pgrep -u $USER torque_rest)
+    fi
     run_server
     while inotifywait -qre close_write --format "$FORMAT" .; do
         if ! [  -z ${TORQUE_PID+x} ]; then
