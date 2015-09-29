@@ -1,17 +1,14 @@
-package users
+package metrics
 
 import (
 	"github.com/jad-b/torque"
 	"github.com/jmoiron/sqlx"
 )
 
-// package.go contains package-level conts, vars, and functions.
-
+// Constants
 const (
-	// Schema is the DB schema name for the users package
-	Schema = "users"
-	// Category defines the type of RESTful resource users live under
-	Category = "users"
+	Schema   = "metrics"
+	Category = "metrics"
 )
 
 // CreateSchema issues the schema creation SQL statement for the users package.

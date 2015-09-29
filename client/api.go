@@ -64,6 +64,7 @@ func (t *TorqueAPI) Authenticate(username, password string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("Authenticated to Torque API as %s\n", username)
 	return nil
 }
 

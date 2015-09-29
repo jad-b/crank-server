@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http/httptest"
+	"runtime"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -25,7 +26,8 @@ func Connect() *sqlx.DB {
 // DieOnError fatally logs an error, if it's real.
 func DieOnError(t *testing.T, err error) {
 	if err != nil {
-		t.Fatal(err)
+		_, f, l, _ := runtime.Caller(1)
+		t.Fatalf("%s:%d: %s", f, l, err.Error())
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"time"
 )
 
@@ -27,6 +28,7 @@ var (
 	// ValidTimestamps are all approved datetime formats in Torque
 	// See RFC 1123
 	ValidTimestamps = []string{
+		time.RFC3339Nano,
 		time.RFC822,
 		time.RFC850,
 		time.ANSIC,
@@ -129,16 +131,20 @@ func LogResponse(resp *http.Response) {
 	log.Print(string(b))
 }
 
-// GetOrCreateTimestamp ensures a timestamp is attached to the Request. First it looks for
+// GetTimestampQuery ensures a timestamp is attached to the Request. First it looks for
 // a Query field "timestamp". Failing that, it returns the current time.
 // Query.
-func GetOrCreateTimestamp(req *http.Request) (t time.Time, err error) {
+func GetTimestampQuery(req *http.Request) (t time.Time, err error) {
 	queryTime := req.URL.Query().Get("timestamp")
-	// Attempt to parse
-	if &queryTime == nil {
-		return time.Now(), nil
-	}
 	return ParseTimestamp(queryTime)
+}
+
+// SetTimestampQuery attaches a timestamp query parameter to the request.
+func SetTimestampQuery(u *url.URL, t time.Time) {
+	stampString := Stamp(t)
+	q := u.Query()
+	q.Set("timestamp", stampString)
+	u.RawQuery = q.Encode()
 }
 
 // ParseTimestamp applies all valid timestamps to the string value.
@@ -187,10 +193,26 @@ func WriteOkayJSON(w http.ResponseWriter, v interface{}) {
 // string
 func HTTPError(w http.ResponseWriter, e error, code int) {
 	// Marhsall struct into a JSON string
-	errorJSON, err := json.MarshalIndent(e, "", "\t")
+	errResp := ErrorResponse{e.Error()}
+	errorJSON, err := json.MarshalIndent(errResp, "", "\t")
 	if err != nil {
 		log.Printf("Trouble marshalling this error: %s.\nThe user will receive a generic %s", e.Error(), genericErrorJSON)
 		errorJSON = genericErrorJSON
 	}
 	http.Error(w, string(errorJSON), code)
+}
+
+// BadRequest returns an 400 to the user along with some debugging information.
+func BadRequest(w http.ResponseWriter, req *http.Request, msg string) {
+	e := struct {
+		Location string     `json:"location"`
+		Query    url.Values `json:"query"`
+		Message  string     `json:"error"`
+	}{
+		Location: req.URL.Path,
+		Query:    req.URL.Query(),
+		Message:  msg,
+	}
+	eJSON := PrettyJSON(e)
+	http.Error(w, eJSON, 400)
 }
