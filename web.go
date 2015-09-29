@@ -28,8 +28,7 @@ var (
 	// ValidTimestamps are all approved datetime formats in Torque
 	// See RFC 1123
 	ValidTimestamps = []string{
-		time.StampMicro,
-		time.StampMilli,
+		time.RFC3339Nano,
 		time.RFC822,
 		time.RFC850,
 		time.ANSIC,

@@ -61,5 +61,5 @@ func Ascend(filename string) (f *os.File, err error) {
 
 // Stamp properly formats a time.Time the Torque way.
 func Stamp(t time.Time) string {
-	return t.Format(time.StampMicro)
+	return t.Format(ValidTimestamps[0])
 }
