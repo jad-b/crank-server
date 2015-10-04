@@ -9,6 +9,7 @@ run_server() {
     make install || true
     torque_rest &
     TORQUE_PID=$!
+    echo "Torque REST server PID: $TORQUE_PID"
 }
 
 poll_server(){

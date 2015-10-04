@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/jad-b/flagit"
 	"github.com/jad-b/torque"
 	"github.com/jmoiron/sqlx"
 )
@@ -49,7 +50,7 @@ type Bodyweight struct {
 // into itself.
 func (bw *Bodyweight) ParseFlags(action string, args []string) {
 	// Define sub-flags for the bodyweight resource
-	var tsFlag torque.TimestampFlag
+	var tsFlag flagit.TimeFlag
 	bwFlags := flag.NewFlagSet("bwFlags", flag.ContinueOnError)
 	bwFlags.Var(&tsFlag, "timestamp", "")
 
