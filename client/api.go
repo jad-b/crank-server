@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"reflect"
 
 	"github.com/jad-b/torque"
 	"github.com/jad-b/torque/users"
@@ -80,6 +81,7 @@ func (t *TorqueAPI) Post(res torque.RESTfulResource) (resp *http.Response, err e
 
 // Get retrieves a resource from the Torque server.
 func (t *TorqueAPI) Get(res torque.RESTfulResource, params url.Values) (resp *http.Response, err error) {
+	SetUserID(res, t.User.ID) // Because we don't use t.NewRequest for GETs
 	getURL := t.BuildURL(res, params).String()
 	return t.Client.Get(getURL)
 }
@@ -108,9 +110,11 @@ func (t *TorqueAPI) Delete(res torque.RESTfulResource, body interface{}) (resp *
 // NewRequest prepares a new HTTP request.
 // It handles filling in the appropriate auth fields.
 func (t *TorqueAPI) NewRequest(method string, url string, body interface{}, params url.Values) (*http.Request, error) {
+	// Try and set missing UserID fields
+	SetUserID(body, t.User.ID)
+	// Marshal body into JSON
 	var payload []byte
 	var err error
-	// Marshal body into JSON
 	if body != nil {
 		payload, err = json.Marshal(body)
 		if err != nil {
@@ -153,4 +157,18 @@ func (t *TorqueAPI) BuildPath(res torque.RESTfulResource) string {
 // String pretty-prints the Torque API client.
 func (t *TorqueAPI) String() string {
 	return torque.PrettyJSON(t)
+}
+
+// SetUserID attaches the active user's ID to the resource.
+// If a 'UserID' field is found set, it won't do a thing.
+func SetUserID(v interface{}, userID int) {
+	val := reflect.ValueOf(v).Elem()
+	uIDField := val.FieldByName("UserID")
+	zeroValue := reflect.Value{}
+	if uIDField == zeroValue || // No UserID field was found
+		uIDField.Kind() != reflect.Int || // It's not an Integer
+		uIDField.Int() != 0 { // UserID's been set.
+		return
+	}
+	uIDField.SetInt(int64(userID))
 }
