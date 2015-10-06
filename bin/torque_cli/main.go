@@ -64,7 +64,7 @@ func main() {
 	// Setup DB or webserver connection
 	dbOrWeb()
 	// pass the remaining args off to the resources to handle
-	handleArgs()
+	handleSubcommand()
 }
 
 // dbOrWeb determines whether we're talking HTTP to a web server or directly to
@@ -85,11 +85,15 @@ func dbOrWeb() {
 	}
 }
 
-func handleArgs() {
-	// Check we received a minimal amount of arguments
+// handleSubcommand delegtes sub-command flags appropriately.
+//
+// Example Usage:
+//	   torque_cli create bodyweight -weight 182.3 -comment "Feeling tremendous."
+func handleSubcommand() {
+	// receive
 	remainder := flag.Args()
 	lenRemainder := len(remainder)
-	// log.Printf("Remaining args: %s", remainder)
+	// Check we received a minimal amount of arguments
 	if lenRemainder < 1 {
 		terminalError = errors.New("No action specified")
 	} else if lenRemainder < 2 {
@@ -110,13 +114,13 @@ func handleArgs() {
 	fs.Parse(remainder[2:])
 	// Determine if we're going over HTTP or directly to the database
 	var err error
-	if *web {
+	if *web { // Operate over REST API
 		var resp *http.Response
 		resp, err = ActOnWeb(r, action)
-		if *verbose {
+		if *verbose && resp != nil {
 			torque.LogResponse(resp)
 		}
-	} else {
+	} else { // Operate directly on the DB
 		err = ActOnDB(r, action, db)
 	}
 	if err != nil {
