@@ -90,13 +90,14 @@ func (t *TorqueAPI) Get(res torque.RESTfulResource, params url.Values) (resp *ht
 	if getter, ok := interface{}(res).(HTTPGetter); ok {
 		log.Print("Delegating GET to resource")
 		// Delegate URL customization to resource
+		SetUserID(res, t.User.ID)
 		getURL = getter.Get(*t.BuildURL(res, nil))
 	} else { // Build the GET URL ourselves
 		getURL = *t.BuildURL(res, params)
 	}
 	log.Printf("GET URL: %s", getURL.String())
 	// Create Request w/ req'd headers
-	req, err := t.NewRequest("GET", getURL.String(), nil)
+	req, err := t.NewRequest("GET", getURL.String(), res)
 	if err != nil {
 		return nil, err
 	}
@@ -183,20 +184,27 @@ func (t *TorqueAPI) String() string {
 
 // SetUserID attaches the active user's ID to the resource.
 // If a 'UserID' field is found set, it won't do a thing.
-func SetUserID(v interface{}, userID int) error {
+func SetUserID(v interface{}, userID int) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			return fmt.Errorf("Failed to set UserID: %s\n", r)
+			err = fmt.Errorf("Failed to set UserID: %s\n", r)
 		}
 	}()
-	val := reflect.ValueOf(v).Elem()
+
+	val := reflect.ValueOf(v)
+	for val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
 	uIDField := val.FieldByName("UserID")
 	zeroValue := reflect.Value{}
-	if uIDField == zeroValue || // No UserID field was found
-		uIDField.Kind() != reflect.Int || // It's not an Integer
-		uIDField.Int() != 0 { // UserID's been set.
-		return
+	if uIDField == zeroValue { // No UserID field was found
+		log.Printf("No UserID field in %s", val.Type().String())
+	} else if uIDField.Kind() != reflect.Int { // It's not an Integer
+		log.Print("UserID is %s, not Integer", uIDField.Type().String())
+	} else if uIDField.Int() != 0 { // UserID's been set.
+		log.Printf("UserID field has already been set to %d", uIDField.Int())
+	} else {
+		uIDField.SetInt(int64(userID))
 	}
-	uIDField.SetInt(int64(userID))
 	return nil
 }

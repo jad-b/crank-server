@@ -15,6 +15,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/jad-b/flagit"
 	"github.com/jad-b/torque"
@@ -39,7 +40,6 @@ var (
 	verbose  = flag.Bool("v", false, "Toggle verbose output")
 	username = flag.String("username", "", "Username for account")
 	password = flag.String("password", "", "Password for account")
-	db       *sqlx.DB
 	// The error that killed the program. Having this as a script-global allows
 	// us to set an error wherever, recover generically with a 'defer' in
 	// main(), and still output something meaningful.
@@ -55,33 +55,16 @@ func main() {
 	// Handle all errors generically
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Printf("%s is an invalid call of torque: %s\n", os.Args, terminalError)
+			log.Printf("Torque: %s\n\t'%s'", terminalError.Error(), strings.Join(os.Args, " "))
 		}
 	}()
 
 	// Get the first pass of flags out of the way
 	flag.Parse()
-	// Setup DB or webserver connection
-	dbOrWeb()
 	// pass the remaining args off to the resources to handle
-	handleSubcommand()
-}
-
-// dbOrWeb determines whether we're talking HTTP to a web server or directly to
-// a database.
-func dbOrWeb() {
-	if *web {
-		// Authenticate to torque server
-		tAPI = client.NewTorqueAPI(*addr)
-		err := tAPI.Authenticate(*username, *password)
-		if err != nil {
-			terminalError = err
-			panic(err)
-		}
-	} else {
-		// Open up a Database connection
-		pgconf := torque.LoadPostgresConfig(*torque.PsqlConf)
-		db = torque.OpenDBConnection(pgconf)
+	err := handleSubcommand()
+	if err != nil {
+		log.Printf("Torque: %s\n\t'%s'", err.Error(), strings.Join(os.Args, " "))
 	}
 }
 
@@ -89,17 +72,16 @@ func dbOrWeb() {
 //
 // Example Usage:
 //	   torque_cli create bodyweight -weight 182.3 -comment "Feeling tremendous."
-func handleSubcommand() {
-	// receive
+func handleSubcommand() (err error) {
 	remainder := flag.Args()
 	lenRemainder := len(remainder)
 	// Check we received a minimal amount of arguments
 	if lenRemainder < 1 {
-		terminalError = errors.New("No action specified")
+		return errors.New("No action specified")
 	} else if lenRemainder < 2 {
-		terminalError = errors.New("No resource specified")
+		return errors.New("No resource specified")
 	} else if lenRemainder < 3 {
-		terminalError = errors.New("No data was provided")
+		return errors.New("No data was provided")
 	}
 	log.Print("Remaining flags: ", remainder)
 
@@ -107,35 +89,43 @@ func handleSubcommand() {
 	action, resource := remainder[0], remainder[1]
 	r, ok := registry[resource]
 	if !ok {
-		terminalError = fmt.Errorf("%s not recognized as resource", remainder[1])
+		return fmt.Errorf("%s not recognized as resource", remainder[1])
 	}
 	// Resource located; have it parse the remaining flags.
 	fs := flagit.FlagIt(r)
-	fs.Parse(remainder[2:])
-	// Determine if we're going over HTTP or directly to the database
-	var err error
-	if *web { // Operate over REST API
-		var resp *http.Response
-		resp, err = ActOnWeb(r, action)
-		if *verbose && resp != nil {
-			torque.LogResponse(resp)
-		}
-	} else { // Operate directly on the DB
-		err = ActOnDB(r, action, db)
-	}
+	err = fs.Parse(remainder[2:])
 	if err != nil {
-		terminalError = err
+		return err
 	}
+	// Determine if we're going over HTTP or directly to the database
+	if *web { // Operate over REST API
+		_, err = handleWebAction(r, action)
+		return err
+	}
+	return handleDBAction(r, action)
+}
+
+func handleWebAction(res torque.RESTfulResource, action string) (resp *http.Response, err error) {
+	// Authenticate to torque server
+	tAPI = client.NewTorqueAPI(*addr)
+	err = tAPI.Authenticate(*username, *password)
+	if err != nil {
+		return nil, err
+	}
+	resp, err = ActOnWeb(res, action)
+	if *verbose && resp != nil {
+		torque.LogResponse(resp)
+	}
+	return resp, err
 }
 
 // ActOnWeb sends an API request to Torque API web server.
 func ActOnWeb(rh torque.RESTfulResource, action string) (*http.Response, error) {
-	log.Printf("REST operation on %#v", rh)
+	log.Printf("HTTP operation on %#v", rh)
 	switch action {
 	case "create":
 		return tAPI.Post(rh)
 	case "retrieve":
-		log.Print("Retrieving...")
 		return tAPI.Get(rh, nil)
 	case "update":
 		return tAPI.Put(rh)
@@ -144,6 +134,13 @@ func ActOnWeb(rh torque.RESTfulResource, action string) (*http.Response, error) 
 	default:
 		return nil, fmt.Errorf("%s is an invalid action", action)
 	}
+}
+
+func handleDBAction(res torque.DBActor, action string) error {
+	// Open up a Database connection
+	pgconf := torque.LoadPostgresConfig(*torque.PsqlConf)
+	db := torque.OpenDBConnection(pgconf)
+	return ActOnDB(res, action, db)
 }
 
 // ActOnDB requests the actor perform it's correct method against the database.

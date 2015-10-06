@@ -48,7 +48,7 @@ type Bodyweight struct {
 */
 
 // Create inserts a new bodyweight entry into the DB.
-func (bw *Bodyweight) Create(db *sqlx.DB) error {
+func (bw Bodyweight) Create(db *sqlx.DB) error {
 	// Kind of hacky.
 	bw.Timestamp = bw.Timestamp.Truncate(time.Second)
 	_, err := db.NamedExec(fmt.Sprintf(`
@@ -67,9 +67,9 @@ func (bw *Bodyweight) Create(db *sqlx.DB) error {
 }
 
 // Retrieve does a lookup for the corresponding bodyweight record by timestamp.
-func (bw *Bodyweight) Retrieve(db *sqlx.DB) error {
+func (bw Bodyweight) Retrieve(db *sqlx.DB) error {
 	return db.Get(
-		bw,
+		&bw,
 		fmt.Sprintf(`
 		SELECT
 			user_id,
@@ -77,13 +77,13 @@ func (bw *Bodyweight) Retrieve(db *sqlx.DB) error {
 			weight,
 			comment
 		FROM %s.%s
-		WHERE user_id=$1, timestamp=$2`,
+		WHERE user_id=$1 AND timestamp=$2`,
 			Schema, bodyweightTableName),
 		bw.UserID, bw.Timestamp)
 }
 
 // Update modifies the matching row in the DB by timestamp.
-func (bw *Bodyweight) Update(db *sqlx.DB) error {
+func (bw Bodyweight) Update(db *sqlx.DB) error {
 	_, err := db.NamedExec(
 		fmt.Sprintf(`
 			UPDATE %s.%s
@@ -98,7 +98,7 @@ func (bw *Bodyweight) Update(db *sqlx.DB) error {
 }
 
 // Delete removes the row from the DB
-func (bw *Bodyweight) Delete(db *sqlx.DB) error {
+func (bw Bodyweight) Delete(db *sqlx.DB) error {
 	stmt := fmt.Sprintf(`
 			DELETE FROM %s.%s
 			WHERE timestamp=:timestamp`,
@@ -112,7 +112,7 @@ func (bw *Bodyweight) Delete(db *sqlx.DB) error {
 */
 
 // HandlePost creates a new bodyweight record.
-func (bw *Bodyweight) HandlePost(w http.ResponseWriter, req *http.Request) {
+func (bw Bodyweight) HandlePost(w http.ResponseWriter, req *http.Request) {
 	log.Print("Request: Create Bodyweight")
 	err := torque.ReadJSONRequest(req, bw)
 	if err != nil {
@@ -129,7 +129,7 @@ func (bw *Bodyweight) HandlePost(w http.ResponseWriter, req *http.Request) {
 
 // HandleGet returns the related bodyweight record
 // Lookup performed by timestamp and user id
-func (bw *Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
+func (bw Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
 	log.Print("Request: Retrieve Bodyweight")
 	torque.LogRequest(req)
 	var err error
@@ -163,6 +163,7 @@ func (bw *Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
 	// DB retrieval
 	log.Printf("Retrieving %+v", bw)
 	if err := bw.Retrieve(torque.DB); err != nil {
+		log.Print(err)
 		torque.BadRequest(w, req, "No record found")
 		return
 	}
@@ -171,7 +172,7 @@ func (bw *Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
 }
 
 // HandlePut updates a Bodyweight resource.
-func (bw *Bodyweight) HandlePut(w http.ResponseWriter, req *http.Request) {
+func (bw Bodyweight) HandlePut(w http.ResponseWriter, req *http.Request) {
 	// Parse body of PUT request into a Bodyweight struct
 	err := torque.ReadJSONRequest(req, bw)
 	if err != nil {
@@ -188,7 +189,7 @@ func (bw *Bodyweight) HandlePut(w http.ResponseWriter, req *http.Request) {
 }
 
 // HandleDelete removes the bodyweight record from the database.
-func (bw *Bodyweight) HandleDelete(w http.ResponseWriter, req *http.Request) {
+func (bw Bodyweight) HandleDelete(w http.ResponseWriter, req *http.Request) {
 	// Retrieve timestamp from request
 	timestamp, err := torque.GetTimestampQuery(req)
 	if err != nil {
@@ -209,7 +210,7 @@ func (bw *Bodyweight) HandleDelete(w http.ResponseWriter, req *http.Request) {
 
 // GetResourceName returns the name the resource wishes to be refered to by in
 // the URL
-func (bw *Bodyweight) GetResourceName() string {
+func (bw Bodyweight) GetResourceName() string {
 	return torque.SlashJoin(Category, "bodyweight/")
 }
 
@@ -225,6 +226,9 @@ func (bw *Bodyweight) RegisterURL() error { return nil }
 // - Timestamp truncation to seconds
 // - Setting timestamp query field
 func (bw *Bodyweight) Get(earl url.URL) url.URL {
-	torque.SetTimestampQuery(&earl, bw.Timestamp.Truncate(time.Second))
+	q := earl.Query()
+	q.Set("timestamp", torque.Stamp(bw.Timestamp.Truncate(time.Second)))
+	q.Set("user_id", strconv.Itoa(bw.UserID))
+	earl.RawQuery = q.Encode()
 	return earl
 }
