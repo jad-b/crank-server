@@ -1,14 +1,15 @@
 package metrics
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"strconv"
 	"time"
 
-	"github.com/jad-b/flagit"
 	"github.com/jad-b/torque"
+	"github.com/jad-b/torque/users"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -43,32 +44,13 @@ type Bodyweight struct {
 }
 
 /*
-	CommandLineActor
-*/
-
-// ParseFlags parses command-line flags related to Bodyweight and loads them
-// into itself.
-func (bw *Bodyweight) ParseFlags(action string, args []string) {
-	// Define sub-flags for the bodyweight resource
-	var tsFlag flagit.TimeFlag
-	bwFlags := flag.NewFlagSet("bwFlags", flag.ContinueOnError)
-	bwFlags.Var(&tsFlag, "timestamp", "")
-
-	bwFlags.Float64Var(&bw.Weight, "weight", 0.0, "")
-	bwFlags.StringVar(&bw.Comment, "comment", "", "")
-
-	// Parse the given flags
-	bwFlags.Parse(args)
-	// Assign our leftover timestamp
-	bw.Timestamp = time.Time(tsFlag)
-}
-
-/*
 	DBResource
 */
 
 // Create inserts a new bodyweight entry into the DB.
 func (bw *Bodyweight) Create(db *sqlx.DB) error {
+	// Kind of hacky.
+	bw.Timestamp = bw.Timestamp.Truncate(time.Second)
 	_, err := db.NamedExec(fmt.Sprintf(`
 	INSERT INTO %s.%s (
 		user_id,
@@ -95,9 +77,9 @@ func (bw *Bodyweight) Retrieve(db *sqlx.DB) error {
 			weight,
 			comment
 		FROM %s.%s
-		WHERE timestamp=$1`,
+		WHERE user_id=$1, timestamp=$2`,
 			Schema, bodyweightTableName),
-		bw.Timestamp)
+		bw.UserID, bw.Timestamp)
 }
 
 // Update modifies the matching row in the DB by timestamp.
@@ -146,16 +128,39 @@ func (bw *Bodyweight) HandlePost(w http.ResponseWriter, req *http.Request) {
 }
 
 // HandleGet returns the related bodyweight record
+// Lookup performed by timestamp and user id
 func (bw *Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
 	log.Print("Request: Retrieve Bodyweight")
 	torque.LogRequest(req)
 	var err error
+	// Get timestamp from query params
 	bw.Timestamp, err = torque.GetTimestampQuery(req)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, "Missing timestamp in query parameters", http.StatusBadRequest)
 		return
 	}
+	// Get user ID from query params OR auth token
+	var uID int
+	uIDparam := req.URL.Query().Get("user_id")
+	if uIDparam == "" { // Not found; default to auth token lookup
+		// Auth header guaranteed by this point
+		authHeader := req.Header.Get(torque.HeaderAuthorization)
+		authToken := users.ParseAuthToken(authHeader)
+		uID, err = users.SwapTokenForID(torque.DB, authToken)
+		if err != nil {
+			http.Error(w, "No user found for that auth token", http.StatusBadRequest)
+			return
+		}
+	} else { // Found, but a string
+		uID, err = strconv.Atoi(uIDparam)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("%s is an invalid user ID", uID), http.StatusBadRequest)
+			return
+		}
+	}
+	bw.UserID = uID
+	// DB retrieval
 	log.Printf("Retrieving %+v", bw)
 	if err := bw.Retrieve(torque.DB); err != nil {
 		torque.BadRequest(w, req, "No record found")
@@ -210,3 +215,16 @@ func (bw *Bodyweight) GetResourceName() string {
 
 // RegisterURL sets up the handler for the Bodyweight reosurce on the server.
 func (bw *Bodyweight) RegisterURL() error { return nil }
+
+/*
+	HTTP{Poster, Getter, Updater, Deleter}
+*/
+
+// Get prepares a URL for  GET'ing a bodyweight record from the server
+// This includes:
+// - Timestamp truncation to seconds
+// - Setting timestamp query field
+func (bw *Bodyweight) Get(earl url.URL) url.URL {
+	torque.SetTimestampQuery(&earl, bw.Timestamp.Truncate(time.Second))
+	return earl
+}

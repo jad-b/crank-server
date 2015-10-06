@@ -21,7 +21,7 @@ func TestPostingBodyweight(t *testing.T) {
 	torque.DieOnError(t, err)
 
 	// Create BW record
-	now := time.Now().Truncate(time.Second)
+	now := time.Now()
 	bw := metrics.Bodyweight{
 		UserID:    tAPI.User.ID,
 		Timestamp: now,
@@ -35,7 +35,7 @@ func TestPostingBodyweight(t *testing.T) {
 	t.Log("POST'd Bodyweight record")
 
 	// Retrieve record
-	resp, err := tAPI.Get(&bw, url.Values{"timestamp": []string{torque.Stamp(now)}})
+	resp, err := tAPI.Get(&bw, url.Values{"timestamp": []string{torque.Stamp(now.Truncate(time.Second))}})
 	torque.DieOnError(t, err)
 	t.Log("GET'd Bodyweight record")
 

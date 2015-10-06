@@ -101,6 +101,7 @@ func (u *UserAuth) Authorize(db *sqlx.DB) error {
 	now := time.Now()
 	u.TokenCreated = now
 	u.TokenLastUsed = now
+	log.Printf("Issused auth token for user '%s'", u.Username)
 	return nil
 }
 
