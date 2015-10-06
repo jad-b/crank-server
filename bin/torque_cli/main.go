@@ -135,6 +135,7 @@ func ActOnWeb(rh torque.RESTfulResource, action string) (*http.Response, error) 
 	case "create":
 		return tAPI.Post(rh)
 	case "retrieve":
+		log.Print("Retrieving...")
 		return tAPI.Get(rh, nil)
 	case "update":
 		return tAPI.Put(rh)
