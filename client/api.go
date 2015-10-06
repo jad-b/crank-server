@@ -14,6 +14,11 @@ import (
 	"github.com/jad-b/torque/users"
 )
 
+// HTTPGetter tells *you* how it's gonna be GETted
+type HTTPGetter interface {
+	Get(url.URL) url.URL
+}
+
 // HTTPPoster tells *you* how it's gonna POST
 type HTTPPoster interface {
 	Post(url.URL) (*http.Response, error)
@@ -72,7 +77,7 @@ func (t *TorqueAPI) Authenticate(username, password string) error {
 // Post is a convenience wrapper for common POST functionality.
 func (t *TorqueAPI) Post(res torque.RESTfulResource) (resp *http.Response, err error) {
 	postURL := t.BuildURL(res, nil).String()
-	req, err := t.NewRequest("POST", postURL, res, nil)
+	req, err := t.NewRequest("POST", postURL, res)
 	if err != nil {
 		return nil, err
 	}
@@ -81,15 +86,29 @@ func (t *TorqueAPI) Post(res torque.RESTfulResource) (resp *http.Response, err e
 
 // Get retrieves a resource from the Torque server.
 func (t *TorqueAPI) Get(res torque.RESTfulResource, params url.Values) (resp *http.Response, err error) {
-	SetUserID(res, t.User.ID) // Because we don't use t.NewRequest for GETs
-	getURL := t.BuildURL(res, params).String()
-	return t.Client.Get(getURL)
+	var getURL url.URL
+	if getter, ok := interface{}(res).(HTTPGetter); ok {
+		log.Print("Delegating GET to resource")
+		// Delegate URL customization to resource
+		getURL = getter.Get(*t.BuildURL(res, nil))
+	} else { // Build the GET URL ourselves
+		getURL = *t.BuildURL(res, params)
+	}
+	log.Printf("GET URL: %s", getURL.String())
+	// Create Request w/ req'd headers
+	req, err := t.NewRequest("GET", getURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	log.Print("Built GET request")
+	torque.LogRequest(req)
+	return t.Client.Do(req)
 }
 
 // Put updates a resource on the Torque server.
 func (t *TorqueAPI) Put(res torque.RESTfulResource) (resp *http.Response, err error) {
 	putURL := t.BuildURL(res, nil).String()
-	req, err := t.NewRequest("PUT", putURL, res, nil)
+	req, err := t.NewRequest("PUT", putURL, res)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +119,7 @@ func (t *TorqueAPI) Put(res torque.RESTfulResource) (resp *http.Response, err er
 // You may provide JSON to pass options to the server.
 func (t *TorqueAPI) Delete(res torque.RESTfulResource, body interface{}) (resp *http.Response, err error) {
 	deleteURL := t.BuildURL(res, nil).String()
-	req, err := t.NewRequest("DELETE", deleteURL, body, nil)
+	req, err := t.NewRequest("DELETE", deleteURL, body)
 	if err != nil {
 		return nil, err
 	}
@@ -109,14 +128,12 @@ func (t *TorqueAPI) Delete(res torque.RESTfulResource, body interface{}) (resp *
 
 // NewRequest prepares a new HTTP request.
 // It handles filling in the appropriate auth fields.
-func (t *TorqueAPI) NewRequest(method string, url string, body interface{}, params url.Values) (*http.Request, error) {
-	// Try and set missing UserID fields
-	SetUserID(body, t.User.ID)
-	// Marshal body into JSON
+func (t *TorqueAPI) NewRequest(method string, url string, body interface{}) (*http.Request, error) {
 	var payload []byte
 	var err error
-	if body != nil {
-		payload, err = json.Marshal(body)
+	if body != nil { // Try and set missing UserID fields
+		SetUserID(body, t.User.ID)
+		payload, err = json.Marshal(body) // Marshal body into JSON
 		if err != nil {
 			return nil, err
 		}
@@ -127,13 +144,18 @@ func (t *TorqueAPI) NewRequest(method string, url string, body interface{}, para
 		return nil, err
 	}
 	// Set headers
+	t.authRequest(req)
+	return req, nil
+}
+
+func (t *TorqueAPI) authRequest(req *http.Request) {
 	req.Header.Set(torque.HeaderContentType, torque.MimeJSON)
 	if t.User.IsAuthenticated() { // Only set if valid
 		req.Header.Set(users.AuthHeader(&t.User))
 	} else {
-		return nil, fmt.Errorf("%s is not authenticated", t.User.Username)
+		// TODO Perform re-authentication on behalf of user
+		log.Print("User's authentication is either missing or invalid")
 	}
-	return req, nil
 }
 
 // BuildURL creates a full-fledged URL
@@ -161,7 +183,12 @@ func (t *TorqueAPI) String() string {
 
 // SetUserID attaches the active user's ID to the resource.
 // If a 'UserID' field is found set, it won't do a thing.
-func SetUserID(v interface{}, userID int) {
+func SetUserID(v interface{}, userID int) error {
+	defer func() {
+		if r := recover(); r != nil {
+			return fmt.Errorf("Failed to set UserID: %s\n", r)
+		}
+	}()
 	val := reflect.ValueOf(v).Elem()
 	uIDField := val.FieldByName("UserID")
 	zeroValue := reflect.Value{}
@@ -171,4 +198,5 @@ func SetUserID(v interface{}, userID int) {
 		return
 	}
 	uIDField.SetInt(int64(userID))
+	return nil
 }
