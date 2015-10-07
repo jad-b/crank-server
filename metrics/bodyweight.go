@@ -130,7 +130,6 @@ func (bw Bodyweight) HandlePost(w http.ResponseWriter, req *http.Request) {
 // HandleGet returns the related bodyweight record
 // Lookup performed by timestamp and user id
 func (bw Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
-	log.Print("Request: Retrieve Bodyweight")
 	torque.LogRequest(req)
 	var err error
 	// Get timestamp from query params
@@ -174,12 +173,13 @@ func (bw Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
 // HandlePut updates a Bodyweight resource.
 func (bw Bodyweight) HandlePut(w http.ResponseWriter, req *http.Request) {
 	// Parse body of PUT request into a Bodyweight struct
-	err := torque.ReadJSONRequest(req, bw)
+	err := torque.ReadJSONRequest(req, &bw)
 	if err != nil {
+		log.Print(err)
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
 	}
-	if err = bw.Update(torque.DB); err != nil {
+	if err = (&bw).Update(torque.DB); err != nil {
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}

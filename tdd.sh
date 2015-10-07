@@ -10,7 +10,9 @@ TORQUE_PKG="github.com/jad-b/torque"
 
 tdd() {
    torque_cli -v -web -username jdb -password torqued \
-        retrieve bodyweight -timestamp '2015-10-04 12:22:05'
+        update bodyweight -timestamp '2015-10-04 12:22:05' \
+           -weight 177.8 \
+           -comment "Have some U with your CR"
 }
 
 poll_test(){

@@ -146,6 +146,7 @@ func (t *TorqueAPI) NewRequest(method string, url string, body interface{}) (*ht
 	}
 	// Set headers
 	t.authRequest(req)
+	torque.LogRequest(req)
 	return req, nil
 }
 
