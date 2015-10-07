@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -103,7 +104,11 @@ func (bw *Bodyweight) Delete(db *sqlx.DB) error {
 			DELETE FROM %s.%s
 			WHERE timestamp=:timestamp`,
 		Schema, bodyweightTableName)
-	_, err := db.NamedExec(stmt, bw)
+	res, err := db.NamedExec(stmt, bw)
+	// DELETE had no affect
+	if i, _ := res.RowsAffected(); i == 0 {
+		return errors.New("Resource does not exist")
+	}
 	return err
 }
 
@@ -161,7 +166,7 @@ func (bw Bodyweight) HandleGet(w http.ResponseWriter, req *http.Request) {
 	bw.UserID = uID
 	// DB retrieval
 	log.Printf("Retrieving %+v", bw)
-	if err := bw.Retrieve(torque.DB); err != nil {
+	if err := (&bw).Retrieve(torque.DB); err != nil {
 		log.Print(err)
 		torque.BadRequest(w, req, "No record found")
 		return
@@ -179,29 +184,32 @@ func (bw Bodyweight) HandlePut(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
 	}
+	// Update in DB
 	if err = (&bw).Update(torque.DB); err != nil {
+		log.Print(err)
 		http.Error(w, "Failed to write record to database", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("Updated %+v", bw)
-	// Write updated record to client
 	torque.WriteOkayJSON(w, bw)
 }
 
 // HandleDelete removes the bodyweight record from the database.
 func (bw Bodyweight) HandleDelete(w http.ResponseWriter, req *http.Request) {
-	// Retrieve timestamp from request
-	timestamp, err := torque.GetTimestampQuery(req)
+	// Parse DELETE body into Bodyweight struct
+	err := torque.ReadJSONRequest(req, &bw)
 	if err != nil {
-		http.Error(w, "Invalid timestamp provided", http.StatusBadRequest)
+		log.Print(err)
+		http.Error(w, "Failed to parse JSON from request", http.StatusBadRequest)
 		return
 	}
-	if err = bw.Delete(torque.DB); err != nil {
+	// Delete from DB
+	if err = (&bw).Delete(torque.DB); err != nil {
+		log.Print(err)
 		http.NotFound(w, req)
 		return
 	}
-	log.Printf("Deleted bodyweight @ %s", timestamp)
-	torque.WriteOkayJSON(w, bw)
+	log.Printf("Deleted bodyweight @ %s", bw.Timestamp)
+	torque.WriteJSON(w, http.StatusNoContent, nil)
 }
 
 /*

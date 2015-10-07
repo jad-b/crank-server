@@ -130,7 +130,7 @@ func ActOnWeb(rh torque.RESTfulResource, action string) (*http.Response, error) 
 	case "update":
 		return tAPI.Put(rh)
 	case "delete":
-		return tAPI.Delete(rh, nil)
+		return tAPI.Delete(rh)
 	default:
 		return nil, fmt.Errorf("%s is an invalid action", action)
 	}

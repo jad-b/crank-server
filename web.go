@@ -176,11 +176,13 @@ func ReadJSONResponse(resp *http.Response, v interface{}) error {
 func WriteJSON(w http.ResponseWriter, code int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	err := json.NewEncoder(w).Encode(v)
-	if err != nil {
-		log.Printf("Failed to encode as json:\n\t%v\nSending %d", v,
-			http.StatusInternalServerError)
-		w.WriteHeader(http.StatusInternalServerError)
+	if v != nil {
+		err := json.NewEncoder(w).Encode(v)
+		if err != nil {
+			log.Printf("Failed to encode as json:\n\t%v\nSending %d", v,
+				http.StatusInternalServerError)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	}
 }
 

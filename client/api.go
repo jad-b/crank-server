@@ -97,7 +97,7 @@ func (t *TorqueAPI) Get(res torque.RESTfulResource, params url.Values) (resp *ht
 	}
 	log.Printf("GET URL: %s", getURL.String())
 	// Create Request w/ req'd headers
-	req, err := t.NewRequest("GET", getURL.String(), res)
+	req, err := t.NewRequest("GET", getURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -118,9 +118,9 @@ func (t *TorqueAPI) Put(res torque.RESTfulResource) (resp *http.Response, err er
 
 // Delete retrieves a resource from the Torque server.
 // You may provide JSON to pass options to the server.
-func (t *TorqueAPI) Delete(res torque.RESTfulResource, body interface{}) (resp *http.Response, err error) {
+func (t *TorqueAPI) Delete(res torque.RESTfulResource) (resp *http.Response, err error) {
 	deleteURL := t.BuildURL(res, nil).String()
-	req, err := t.NewRequest("DELETE", deleteURL, body)
+	req, err := t.NewRequest("DELETE", deleteURL, res)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +138,7 @@ func (t *TorqueAPI) NewRequest(method string, url string, body interface{}) (*ht
 		if err != nil {
 			return nil, err
 		}
+		log.Print(torque.PrettyJSON(body))
 	}
 	// Create HTTP Request
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(payload))
