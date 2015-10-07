@@ -48,7 +48,7 @@ type Bodyweight struct {
 */
 
 // Create inserts a new bodyweight entry into the DB.
-func (bw Bodyweight) Create(db *sqlx.DB) error {
+func (bw *Bodyweight) Create(db *sqlx.DB) error {
 	// Kind of hacky.
 	bw.Timestamp = bw.Timestamp.Truncate(time.Second)
 	_, err := db.NamedExec(fmt.Sprintf(`
@@ -67,9 +67,9 @@ func (bw Bodyweight) Create(db *sqlx.DB) error {
 }
 
 // Retrieve does a lookup for the corresponding bodyweight record by timestamp.
-func (bw Bodyweight) Retrieve(db *sqlx.DB) error {
+func (bw *Bodyweight) Retrieve(db *sqlx.DB) error {
 	return db.Get(
-		&bw,
+		bw,
 		fmt.Sprintf(`
 		SELECT
 			user_id,
@@ -83,7 +83,7 @@ func (bw Bodyweight) Retrieve(db *sqlx.DB) error {
 }
 
 // Update modifies the matching row in the DB by timestamp.
-func (bw Bodyweight) Update(db *sqlx.DB) error {
+func (bw *Bodyweight) Update(db *sqlx.DB) error {
 	_, err := db.NamedExec(
 		fmt.Sprintf(`
 			UPDATE %s.%s
@@ -98,7 +98,7 @@ func (bw Bodyweight) Update(db *sqlx.DB) error {
 }
 
 // Delete removes the row from the DB
-func (bw Bodyweight) Delete(db *sqlx.DB) error {
+func (bw *Bodyweight) Delete(db *sqlx.DB) error {
 	stmt := fmt.Sprintf(`
 			DELETE FROM %s.%s
 			WHERE timestamp=:timestamp`,
