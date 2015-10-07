@@ -9,7 +9,8 @@ FORMAT=$(echo -e "\033[1;33m%w%f\033[0m written")
 TORQUE_PKG="github.com/jad-b/torque"
 
 tdd() {
-   torque_cli -v -web -username jdb -password torqued \
+    # Perform the full CRUD operation back-to-back
+    torque_cli -v -web -username jdb -password torqued \
         delete bodyweight -timestamp '2015-10-04 12:22:05'
 }
 
