@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	s = &[]Set{
+	testSet = &[]Set{
 		{20, Kilograms, 5, -1, 1},
 		{60, Kilograms, 5, -1, 2},
 		{80, Kilograms, 3, -1, 3},
@@ -15,14 +15,14 @@ var (
 		{105, Kilograms, 5, -1, 6},
 		{119, Kilograms, 4, -1, 7},
 	}
-	ex = &Exercise{
+	testExercise = &Exercise{
 		Name:         "Squat",
 		Modifiers:    []string{"Back"},
-		Sets:         *s,
+		Sets:         *testSet,
 		Tags:         []Tag{{"comment", "coming off drill weekend, tired and small"}},
 		LastModified: time.Now(),
 	}
-	wkt = &Workout{
+	testWorkout = &Workout{
 		UserID:       1,
 		LastModified: time.Now(),
 		Exercises: []Exercise{
@@ -34,7 +34,7 @@ var (
 				},
 				LastModified: time.Now(),
 			},
-			*ex,
+			*testExercise,
 			{
 				Name:      "Curl",
 				Modifiers: []string{"Ring"},
@@ -50,7 +50,7 @@ var (
 )
 
 func TestWorkoutCreated(t *testing.T) {
-	if s != nil && ex != nil && wkt != nil {
-		t.Log("Workout built successfully")
+	if testSet != nil && testExercise != nil && testWorkout != nil {
+		t.Log("Workout compiled successfully")
 	}
 }

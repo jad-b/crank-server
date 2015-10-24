@@ -50,7 +50,7 @@ type Bodyweight struct {
 
 // Create inserts a new bodyweight entry into the DB.
 func (bw *Bodyweight) Create(db *sqlx.DB) error {
-	// Kind of hacky.
+	// Need to ensure we only record second-precision
 	bw.Timestamp = bw.Timestamp.Truncate(time.Second)
 	_, err := db.NamedExec(fmt.Sprintf(`
 	INSERT INTO %s.%s (

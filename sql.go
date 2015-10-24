@@ -9,6 +9,22 @@ import (
 // sql.go provides useful SQL functions.
 // Mostly SQL templates.
 
+// DBActor defines an object which implements basic data operations
+type DBActor interface {
+	Create(*sqlx.DB) error
+	Retrieve(*sqlx.DB) error
+	Update(*sqlx.DB) error
+	Delete(*sqlx.DB) error
+}
+
+// Transactor adds operations to sql.Transactions
+type Transactor interface {
+	Create(*sqlx.Tx) error
+	Retrieve(*sqlx.Tx) error
+	Update(*sqlx.Tx) error
+	Delete(*sqlx.Tx) error
+}
+
 // CreateSchema executes the required SQL for building a new schema.
 // ifMissing adds the "IF NOT EXISTS" clause.
 func CreateSchema(db *sqlx.DB, schema string, ifMissing bool) error {

@@ -15,38 +15,59 @@ const (
 	Kgs = Kilograms
 )
 
+// RepUnit is the unit of the work quantity performed.
+// A weight lifter would perform repetitions, a swimmer may perform laps,
+// a stretch may be for an amount of time, etc.
+type RepUnit string
+
+// See RepUnit
+const (
+	repetition = "repetition"
+	second     = "second"
+)
+
 // Workout defines an entire workout
 type Workout struct {
 	// Owner of workout
-	UserID int
+	UserID int `json:"user_id",db:"user_id"`
 	// Time of last modification
-	LastModified time.Time
+	LastModified time.Time `json:"last_modified",db:"last_modified"`
 	// Exercises performed during the workout
+	// one2many relationship
 	Exercises []Exercise
 	// Arbitrary key=value data
+	// many2many relationship
 	Tags []Tag
 }
 
 // Exercise is a performed (or planned) instance of an exercise
 type Exercise struct {
+	// Instance ID
+	ID int `json:"exercise_id",db:"exercise_id"`
 	// Name of the primary movement, e.g. Squat
-	Name string
-	// Modifiers to the movement
-	// for Squat you'd have Front, Box, Partial, Anderson, etc.
+	Name string `json:"exercise_name",db:"exercise_name"`
+	// Modifiers to the movement. For Squat, you'd have Front, Box, Partial,
+	// Anderson, etc.
+	// m2m relationship
 	Modifiers []string
 	// Sets performed for the exercise
+	// one2many relationship
 	Sets []Set
 	// Arbitrary key=value data
+	// m2m relationship
 	Tags         []Tag
-	LastModified time.Time
+	LastModified time.Time `json:"last_modified",db:"last_modified"`
 }
 
 // Set is a performed (or planned) workout set of an Exercise
 type Set struct {
-	Weight int
+	// Parent exercise instance
+	ExerciseID int `json:"exercise_id",db:"exercise_id"`
+	Weight     int
 	// Pounds, kilograms, stone, what-have-you
-	WeightUnit MassUnit
+	WeightUnit MassUnit `json:"weight_unit",db:"weight_unit"`
 	Reps       int
+	RepUnit    RepUnit `json:"rep_unit",db:"rep_unit"`
 	// Rest period taken *before* this set. Knowing the rest period taken
 	// *after* this set would have no meaning, although it's still pretty empty
 	// when taken alone.
@@ -54,7 +75,7 @@ type Set struct {
 	Rest time.Duration
 	// Number marking the order the set was performed within the workout
 	// Thus, it only has meaning with the context of its parent workout
-	SetID int
+	Order int
 }
 
 // Tag holds arbitrary key=value strings

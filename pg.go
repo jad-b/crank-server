@@ -35,14 +35,6 @@ var (
 	DB *sqlx.DB
 )
 
-// DBActor defines an object which implements basic data operations
-type DBActor interface {
-	Create(*sqlx.DB) error
-	Retrieve(*sqlx.DB) error
-	Update(*sqlx.DB) error
-	Delete(*sqlx.DB) error
-}
-
 // PostgresConfig is the minimal config needed to connect to a Postgres database.
 // Shared DB singleton
 type PostgresConfig struct {
