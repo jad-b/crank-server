@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	bodyweightTableName = "bodyweight"
 	// BodyweightSQL is the SQL required to create the Bodyweight table.
 	bodyweightTable = `
   user_id integer NOT NULL,
@@ -24,6 +23,10 @@ const (
   comment text,
   UNIQUE(user_id, timestamp)
 `
+)
+
+var (
+	bodyweightTableName = fmt.Sprintf("%s.bodyweight", Schema)
 )
 
 // CreateTableBodyweight creates the Bodyweight table

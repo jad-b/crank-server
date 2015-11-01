@@ -2,6 +2,7 @@ package torque
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -25,6 +26,10 @@ type Transactor interface {
 	Delete(*sqlx.Tx) error
 }
 
+// Transactional accepts a transaction, performs an operation (presumably on
+// the active transaction), and returns an error if anything want wrong.
+type Transactional func(*sqlx.Tx) error
+
 // CreateSchema executes the required SQL for building a new schema.
 // ifMissing adds the "IF NOT EXISTS" clause.
 func CreateSchema(db *sqlx.DB, schema string, ifMissing bool) error {
@@ -46,4 +51,17 @@ func CreateTable(db *sqlx.DB, schema, tablename, table string, ifMissing bool) e
 	sql := fmt.Sprintf("Create TABLE%s%s.%s ( %s )", maybe, schema, tablename, table)
 	_, err := db.Exec(sql)
 	return err
+}
+
+// Transact wraps a DB operation in a transaction
+func Transact(db *sqlx.DB, fn Transactional) error {
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+	if err := fn(tx); err != nil {
+		log.Print(err)
+		return tx.Rollback()
+	}
+	return tx.Commit()
 }

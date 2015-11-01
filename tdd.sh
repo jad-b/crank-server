@@ -10,8 +10,7 @@ TORQUE_PKG="github.com/jad-b/torque"
 
 tdd() {
     # Perform the full CRUD operation back-to-back
-    torque_cli -v -web -username jdb -password torqued \
-        delete bodyweight -timestamp '2015-10-04 12:22:05'
+    go test -v "$TORQUE_PKG/workouts" -run TestSetCreate
 }
 
 poll_test(){
