@@ -28,24 +28,27 @@ const (
 
 // Workout defines an entire workout
 type Workout struct {
+	ID int `json:"workout_id" db:"workout_id"`
 	// Owner of workout
 	UserID int `json:"user_id" db:"user_id"`
 	// Time of last modification
 	LastModified time.Time `json:"last_modified" db:"last_modified"`
 	// Exercises performed during the workout
 	// one2many relationship
-	Exercises []Exercise
+	Exercises []Exercise `json:"exercises`
 	// Arbitrary key=value data
 	// many2many relationship
-	Tags []Tag
+	Tags []Tag `json:"tags"`
 }
 
 // Exercise is a performed (or planned) instance of an exercise
 type Exercise struct {
 	// Instance ID
 	ID int `json:"exercise_id" db:"exercise_id"`
+	// Workout it belongs to
+	WorkoutID int `json:"workout_id" db:"workout_id"`
 	// Name of the primary movement, e.g. Squat
-	Name string `json:"exercise_name" db:"exercise_name"`
+	Movement string `json:"movement" db:"movement"`
 	// Modifiers to the movement. For Squat, you'd have Front, Box, Partial,
 	// Anderson, etc.
 	// m2m relationship
@@ -76,7 +79,7 @@ type Set struct {
 	Rest time.Duration
 	// Number marking the order the set was performed within the workout
 	// Thus, it only has meaning with the context of its parent workout
-	Order int
+	Order int `db:"ordering"`
 }
 
 // Tag holds arbitrary key=value strings

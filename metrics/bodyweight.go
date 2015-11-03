@@ -33,7 +33,6 @@ var (
 func CreateTableBodyweight(db *sqlx.DB) error {
 	return torque.CreateTable(
 		db,
-		Schema,
 		bodyweightTableName,
 		bodyweightTable,
 		true)

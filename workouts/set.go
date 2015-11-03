@@ -10,13 +10,13 @@ import (
 var (
 	setTableName = fmt.Sprintf("%s.set", Schema)
 	setTableSQL  = `
-	set_id serial PRIMARY KEY,
-	exercise_id int REFERENCES exercise (exercise_id) ON UPDATE CASCADE ON DELETE CASCADE,
-	weight_unit text,
-	reps integer,
-	rep_unit text,
-	rest interval MINUTE TO SECOND 0,
-	order integer
+set_id serial PRIMARY KEY,
+exercise_id int REFERENCES workouts.exercise (exercise_id) ON UPDATE CASCADE ON DELETE CASCADE,
+weight_unit text,
+reps integer,
+rep_unit text,
+rest interval MINUTE TO SECOND (0),
+ordering integer
 `
 )
 
@@ -24,7 +24,7 @@ var (
 func (s *Set) Create(tx *sqlx.Tx) error {
 	// Create Set row
 	q := fmt.Sprintf(`
-		INSERT INTO %s.%s (
+		INSERT INTO %s (
 			exercise_id,
 			weight,
 			weight_unit,
@@ -40,7 +40,7 @@ func (s *Set) Create(tx *sqlx.Tx) error {
 			:rep_unit,
 			:rest,
 			:order
-		)`, Schema, setTableName)
+		)`, setTableName)
 	_, err := tx.NamedExec(q, s)
 	return err
 }
@@ -82,8 +82,7 @@ func (s *Set) Delete(tx *sqlx.Tx) error {
 		DELETE FROM %s
 		WHERE %s
 	`, setTableName, s.buildWhere())
-	res, err := tx.NamedExec(q, s)
-	// DELETE had no affect
+	res, err := tx.NamedExec(q, s) // DELETE had no affect
 	if i, _ := res.RowsAffected(); i == 0 {
 		return errors.New("Resource does not exist")
 	}

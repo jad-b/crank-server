@@ -15,6 +15,11 @@ func SlashJoin(args ...string) string {
 	return strings.Join(args, "/")
 }
 
+// VariadicJoin lets you skip using []string{...} notation.
+func VariadicJoin(delim string, args ...string) string {
+	return strings.Join(args, delim)
+}
+
 // PrettyJSON pretty-prints JSON. If an error occurs, you'll get back an empty,
 // but valid, JSON structure.
 func PrettyJSON(v interface{}) string {

@@ -11,7 +11,6 @@ func TestCreateTableSet(t *testing.T) {
 
 	err := torque.CreateTable(
 		db,
-		Schema,
 		setTableName,
 		setTableSQL,
 		true,

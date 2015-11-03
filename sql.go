@@ -2,7 +2,6 @@ package torque
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -43,12 +42,12 @@ func CreateSchema(db *sqlx.DB, schema string, ifMissing bool) error {
 }
 
 // CreateTable builds and executes a CREATE TABLE SQL statement.
-func CreateTable(db *sqlx.DB, schema, tablename, table string, ifMissing bool) error {
+func CreateTable(db *sqlx.DB, tablename, table string, ifMissing bool) error {
 	maybe := " "
 	if ifMissing {
 		maybe = " IF NOT EXISTS "
 	}
-	sql := fmt.Sprintf("Create TABLE%s%s.%s ( %s )", maybe, schema, tablename, table)
+	sql := fmt.Sprintf("Create TABLE%s%s ( %s )", maybe, tablename, table)
 	_, err := db.Exec(sql)
 	return err
 }
@@ -60,8 +59,13 @@ func Transact(db *sqlx.DB, fn Transactional) error {
 		return err
 	}
 	if err := fn(tx); err != nil {
-		log.Print(err)
-		return tx.Rollback()
+		// Return any error we had rolling back
+		if txErr := tx.Rollback(); txErr != nil {
+			return txErr
+		}
+		// Otherwise, raise the initial error so our caller knows something
+		// went wrong
+		return err
 	}
 	return tx.Commit()
 }

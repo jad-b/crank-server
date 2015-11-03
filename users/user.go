@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	userAuthTableName = "user_auth"
 	// UserAuthTable describes the SQL fields
 	userAuthTable = `
 id serial PRIMARY KEY,
@@ -33,11 +32,12 @@ token_created timestamp(0) WITH time zone,
 token_last_used timestamp(0) WITH time zone`
 )
 
+var userAuthTableName = torque.VariadicJoin(".", Schema, "user_auth")
+
 // CreateTableUserAuth creates the UserAuth table
 func CreateTableUserAuth(db *sqlx.DB) error {
 	return torque.CreateTable(
 		db,
-		Schema,
 		userAuthTableName,
 		userAuthTable,
 		true)

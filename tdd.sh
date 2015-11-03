@@ -13,10 +13,8 @@ tdd() {
     go test -v "$TORQUE_PKG/workouts" -run TestSetCreate
 }
 
-poll_test(){
+poll(){
     while inotifywait -qre close_write --format "$FORMAT" .; do
-        tdd || true
+        eval "$@" || true
     done
 }
-
-tdd

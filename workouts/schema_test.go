@@ -12,7 +12,7 @@ var (
 		Exercises: []Exercise{
 			{
 				ID:        1,
-				Name:      "Swing",
+				Movement:  "Swing",
 				Modifiers: []string{"Kettlebell"},
 				Sets: []Set{
 					{1, 1, 28, Kilograms, 36, Repetition, -1, 0},
@@ -22,7 +22,7 @@ var (
 			Exercise{}, // Placeholder for test exercise
 			{
 				ID:        3,
-				Name:      "Curl",
+				Movement:  "Curl",
 				Modifiers: []string{"Ring"},
 				Sets: []Set{
 					{2, 3, 177, Pounds, 10, Repetition, -1, 8},
@@ -35,7 +35,7 @@ var (
 	}
 	testExercise = &Exercise{
 		ID:           2,
-		Name:         "Squat",
+		Movement:     "Squat",
 		Modifiers:    []string{"Back"},
 		Sets:         nil, // Placeholder for testSet
 		Tags:         []Tag{{"comment", "coming off drill weekend, tired and small"}},
