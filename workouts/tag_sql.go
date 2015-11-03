@@ -17,14 +17,14 @@ const (
 	workoutTagTableSQL = `
 	workout_id REFERENCES workouts.workout (workout_id) ON UPDATE CASCADE ON DELETE CASCADE,
 	tag_id REFERENCES workouts.tag (tag_id) ON UPDATE CASCADE,
-	CREATE INDEX workout_tag_id UNIQUE(workout_id, tag_id)`
+	CONSTRAINT workout_tag_id PRIMARY KEY (workout_id, tag_id)`
 
 	// exerciseTagTableSQL describes a many-to-many table that links arbitrary
 	// tag data to other rows via their row ID.
 	exerciseTagTableSQL = `
 	exercise_id REFERENCES workouts.exercise (exercise_id) ON UPDATE CASCADE ON DELETE CASCADE,
 	tag_id REFERENCES workouts.tag (tag_id) ON UPDATE CASCADE,
-	CREATE INDEX exercise_tag_id UNIQUE(exercise_id, tag_id)`
+	CONSTRAINT exercise_tag_id PRIMARY KEY (exercise_id, tag_id)`
 )
 
 var (
