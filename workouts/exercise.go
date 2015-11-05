@@ -35,10 +35,10 @@ func (ex *Exercise) Create(tx *sqlx.Tx) error {
 	// Insert exercise row
 	q := fmt.Sprintf(`
 		INSERT INTO %s (
-			exercise_name,
+			movement,
 			last_modified
 		) VALUES (
-			:exercise_name,
+			:movement,
 			:last_modified
 		)`, exerciseTableName)
 	res, err := tx.NamedExec(q, ex)
