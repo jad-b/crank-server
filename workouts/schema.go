@@ -56,18 +56,18 @@ type Exercise struct {
 	// Workout it belongs to
 	WorkoutID int `json:"workout_id" db:"workout_id"`
 	// Name of the primary movement, e.g. Squat
-	Movement string `json:"movement" db:"movement"`
+	Movement     string    `json:"movement" db:"movement"`
+	LastModified time.Time `json:"last_modified" db:"last_modified"`
+	// Sets performed for the exercise
+	// one2many relationship
+	Sets []Set
 	// Modifiers to the movement. For Squat, you'd have Front, Box, Partial,
 	// Anderson, etc.
 	// m2m relationship
 	Modifiers []string
-	// Sets performed for the exercise
-	// one2many relationship
-	Sets []Set
 	// Arbitrary key=value data
 	// m2m relationship
-	Tags         []Tag
-	LastModified time.Time `json:"last_modified" db:"last_modified"`
+	Tags []Tag
 }
 
 // Set is a performed (or planned) workout set of an Exercise

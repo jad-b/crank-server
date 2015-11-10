@@ -44,20 +44,24 @@ func TestWorkoutRetrieve(t *testing.T) {
 	}
 
 	// Try to retrieve a workout
+	t.Logf("Created workout = %d", workout.ID)
 	wkt2 := Workout{ID: workout.ID}
+	t.Logf("Attempting to retrieve workout %d", wkt2.ID)
 	if err := torque.Transact(db, workout.Retrieve); err != nil {
 		t.Fatal(err)
 	}
 
 	// Verify fields were updated
-	if wkt2.Exercises == Exercise{} {
+	if wkt2.Exercises == nil {
 		t.Fatal("Failed to retrieve exercises")
 	}
-	for _, i := range wkt2.Exercises {
-		if wkt2.Exercises[i].Sets == Set{} {
+	for i := range wkt2.Exercises {
+		if wkt2.Exercises[i].Sets == nil {
 			t.Errorf("Failed to retrieve exercise %d sets", i)
 		}
 	}
+	// For lack of a better quick comparison...
+	t.Logf("%#v", wkt2)
 
 	if err := torque.Transact(db, workout.Delete); err != nil {
 		t.Fatal(err)

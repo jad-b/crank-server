@@ -50,14 +50,13 @@ func (s *Set) Create(tx *sqlx.Tx) error {
 
 // Retrieve looks up an exercise set row using whatever it was given.
 func (s *Set) Retrieve(tx *sqlx.Tx) error {
-	// Copy, so as to avoid any overwriting weirdness
-	clone := *s
 	q := fmt.Sprintf(`
 		SELECT *
 		FROM %s
 		WHERE %s
 	`, setTableName, s.buildWhere())
-	return tx.Get(s, q, &clone)
+	_, err := tx.NamedExec(q, s)
+	return err
 }
 
 // Update does just that.

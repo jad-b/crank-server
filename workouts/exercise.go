@@ -36,15 +36,17 @@ func (ex *Exercise) Create(tx *sqlx.Tx) error {
 	// Insert exercise row
 	q := fmt.Sprintf(`
 		INSERT INTO %s (
+			workout_id,
 			movement,
 			last_modified
 		) VALUES (
 			$1,
-			$2
+			$2,
+			$3
 		) RETURNING exercise_id`, exerciseTableName)
 	var rowInt int64
 	log.Print("Creating exercise record in DB")
-	err := tx.QueryRowx(q, ex.Movement, ex.LastModified).Scan(&rowInt)
+	err := tx.QueryRowx(q, ex.WorkoutID, ex.Movement, ex.LastModified).Scan(&rowInt)
 	if err != nil {
 		return err
 	}
@@ -66,6 +68,24 @@ func (ex *Exercise) Create(tx *sqlx.Tx) error {
 		}
 	}
 	return err
+}
+
+// Retrieve queries the DB for the matching Exercise record
+func (ex *Exercise) Retrieve(tx *sqlx.Tx) error {
+	tmp := *ex
+	q := fmt.Sprintf(`
+		SELECT *
+		FROM %s
+		WHERE exercise_id=:exercise_id`,
+		exerciseTableName)
+	if err := tx.Get(ex, q, &tmp); err != nil {
+		return err
+	}
+	log.Printf("%v", ex)
+	// Retrieve Sets
+	// Retrieve Modifiers
+	// Retrieve Tags
+	return nil
 }
 
 // Delete removes the exercise entry.

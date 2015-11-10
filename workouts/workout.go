@@ -3,6 +3,7 @@ package workouts
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -47,25 +48,25 @@ func (w *Workout) Create(tx *sqlx.Tx) error {
 
 // Retrieve queries the DB for a workout by ID or UserID & timestamp
 func (w *Workout) Retrieve(tx *sqlx.Tx) error {
-	tmp := *w
 	q := fmt.Sprintf(`
 		SELECT *
 		FROM %s
-		WHERE %s`,
-		workoutTableName, w.buildWhere())
-	if err := tx.Get(w, q, &tmp); err != nil {
+		WHERE workout_id = $1`,
+		workoutTableName)
+	if err := tx.Get(w, q, w.ID); err != nil {
 		return err
 	}
 	// Retrieve associated exercise IDs
 	var exIDs []int
-	q := fmt.Sprintf(`
+	q = fmt.Sprintf(`
 		SELECT exercise_id
 		FROM %s
-		WHERE workout_id=$1`,
-		exerciseTableName, w.ID)
-	if err := tx.Select(&exIDs, q); err != nil {
+		WHERE workout_id = $1`,
+		exerciseTableName)
+	if err := tx.Select(&exIDs, q, w.ID); err != nil {
 		return err
 	}
+	log.Printf("Workout %d Exercise IDs: %v", w.ID, exIDs)
 	// Lookup exercises by the ID
 	for _, i := range exIDs {
 		ex := Exercise{ID: i}
@@ -73,6 +74,7 @@ func (w *Workout) Retrieve(tx *sqlx.Tx) error {
 		w.Exercises = append(w.Exercises, ex)
 	}
 	// TODO Lookup tags
+	return nil
 }
 
 // Delete removes the workout from the table. It also removes any tags it held
@@ -89,4 +91,11 @@ func (w *Workout) Delete(tx *sqlx.Tx) error {
 	}
 	// TODO remove linked tags
 	return err
+}
+
+func (w *Workout) buildWhere() string {
+	if w.ID != 0 {
+		return "workout_id=:workout_id"
+	}
+	return "user_id=:user_id, last_modified=:last_modified"
 }

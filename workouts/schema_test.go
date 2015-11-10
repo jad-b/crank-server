@@ -62,6 +62,7 @@ var (
 )
 
 func init() {
+	testWorkout.Exercises[1] = *testExercise
 	testExercise.Sets = testSets
 }
 
