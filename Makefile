@@ -38,6 +38,10 @@ swagger:
 	# Generate full Swagger API spec output file
 	./swaggregate.py -m main.yaml -o swagger.yaml
 
+setup:
+	source wrench.sh; setup
+	glide up
+
 # Run goimports on every Go file
 imports:
 	find . ! -readable -prune -name '*.go'  -exec goimports -w {} \;
