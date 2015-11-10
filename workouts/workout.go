@@ -45,6 +45,36 @@ func (w *Workout) Create(tx *sqlx.Tx) error {
 	return err
 }
 
+// Retrieve queries the DB for a workout by ID or UserID & timestamp
+func (w *Workout) Retrieve(tx *sqlx.Tx) error {
+	tmp := *w
+	q := fmt.Sprintf(`
+		SELECT *
+		FROM %s
+		WHERE %s`,
+		workoutTableName, w.buildWhere())
+	if err := tx.Get(w, q, &tmp); err != nil {
+		return err
+	}
+	// Retrieve associated exercise IDs
+	var exIDs []int
+	q := fmt.Sprintf(`
+		SELECT exercise_id
+		FROM %s
+		WHERE workout_id=$1`,
+		exerciseTableName, w.ID)
+	if err := tx.Select(&exIDs, q); err != nil {
+		return err
+	}
+	// Lookup exercises by the ID
+	for _, i := range exIDs {
+		ex := Exercise{ID: i}
+		ex.Retrieve(tx) // Implicit set lookup
+		w.Exercises = append(w.Exercises, ex)
+	}
+	// TODO Lookup tags
+}
+
 // Delete removes the workout from the table. It also removes any tags it held
 // from the linking table.
 func (w *Workout) Delete(tx *sqlx.Tx) error {
