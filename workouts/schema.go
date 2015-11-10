@@ -1,6 +1,9 @@
 package workouts
 
-import "time"
+import (
+	"database/sql/driver"
+	"time"
+)
 
 // Defines the data model for workouts
 
@@ -19,6 +22,11 @@ const (
 // A weight lifter would perform repetitions, a swimmer may perform laps,
 // a stretch may be for an amount of time, etc.
 type RepUnit string
+
+// Value converts the RepUnit into a string
+func (ru RepUnit) Value() (driver.Value, error) {
+	return driver.Value(string(ru)), nil
+}
 
 // See RepUnit
 const (

@@ -22,6 +22,7 @@ func TestCreateTableWorkout(t *testing.T) {
 
 func TestWorkoutCreate(t *testing.T) {
 	workout := *testWorkout
+	workout.UserID = 93 // redteam user ID; needs to be dynamic
 	if err := torque.Transact(db, workout.Create); err != nil {
 		t.Fatal(err)
 	}

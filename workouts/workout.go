@@ -21,14 +21,20 @@ var workoutTableName = fmt.Sprintf("%s.workout", Schema)
 func (w *Workout) Create(tx *sqlx.Tx) error {
 	q := fmt.Sprintf(`
 		INSERT INTO %s (
-			workout_id,
 			user_id,
 			last_modified
 		) VALUES (
-			:workout_id,
-			:user_id,
-			:last_modified
-		)`, workoutTableName)
+			$1,
+			$2
+		) RETURNING workout_id`, workoutTableName)
+	// Set workout ID from assigned row ID
+	var rowInt int64
+	err := tx.QueryRowx(q, w.UserID, w.LastModified).Scan(&rowInt)
+	if err != nil {
+		return err
+	}
+	w.ID = int(rowInt)
+	// Insert Exercises
 	for _, ex := range w.Exercises {
 		ex.WorkoutID = w.ID
 		if err := ex.Create(tx); err != nil {
@@ -36,7 +42,6 @@ func (w *Workout) Create(tx *sqlx.Tx) error {
 		}
 	}
 	// TODO link tags
-	_, err := tx.NamedExec(q, w)
 	return err
 }
 
@@ -45,9 +50,7 @@ func (w *Workout) Create(tx *sqlx.Tx) error {
 func (w *Workout) Delete(tx *sqlx.Tx) error {
 	q := fmt.Sprintf(`
 		DELETE FROM %s
-		WHERE
-			workout_id=:workout_id,
-			user_id=:user_id
+		WHERE workout_id=:workout_id AND user_id=:user_id
 		`, workoutTableName)
 	res, err := tx.NamedExec(q, w)
 	// DELETE had no affect

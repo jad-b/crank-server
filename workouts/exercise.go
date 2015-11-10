@@ -3,6 +3,7 @@ package workouts
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/jad-b/torque"
 	"github.com/jmoiron/sqlx"
@@ -38,19 +39,17 @@ func (ex *Exercise) Create(tx *sqlx.Tx) error {
 			movement,
 			last_modified
 		) VALUES (
-			:movement,
-			:last_modified
-		)`, exerciseTableName)
-	res, err := tx.NamedExec(q, ex)
-	if err != nil {
-		return err
-	}
-	// Get our row ID
-	rowInt, err := res.LastInsertId()
+			$1,
+			$2
+		) RETURNING exercise_id`, exerciseTableName)
+	var rowInt int64
+	log.Print("Creating exercise record in DB")
+	err := tx.QueryRowx(q, ex.Movement, ex.LastModified).Scan(&rowInt)
 	if err != nil {
 		return err
 	}
 	ex.ID = int(rowInt) // Downcast from int64 to int
+	log.Printf("Created row %d in Exercise table", ex.ID)
 	// Update Modifiers table
 	err = linkModifiers(tx, ex.ID, ex.Modifiers)
 	if err != nil {
@@ -60,6 +59,7 @@ func (ex *Exercise) Create(tx *sqlx.Tx) error {
 	err = linkTags(tx, ex.ID, ex.Tags)
 	// Create Set entries
 	for _, set := range ex.Sets {
+		set.ExerciseID = ex.ID
 		err = set.Create(tx)
 		if err != nil {
 			return err

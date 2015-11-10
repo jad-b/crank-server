@@ -3,6 +3,7 @@ package workouts
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -12,6 +13,7 @@ var (
 	setTableSQL  = `
 set_id serial PRIMARY KEY,
 exercise_id int REFERENCES workouts.exercise (exercise_id) ON UPDATE CASCADE ON DELETE CASCADE,
+weight integer,
 weight_unit text,
 reps integer,
 rep_unit text,
@@ -23,6 +25,7 @@ ordering integer
 // Create adds a set row insertion into the transaction
 func (s *Set) Create(tx *sqlx.Tx) error {
 	// Create Set row
+	log.Print("Creating set record in DB")
 	q := fmt.Sprintf(`
 		INSERT INTO %s (
 			exercise_id,
@@ -31,7 +34,7 @@ func (s *Set) Create(tx *sqlx.Tx) error {
 			reps,
 			rep_unit,
 			rest,
-			order
+			ordering
 		) VALUES (
 			:exercise_id,
 			:weight,
@@ -39,7 +42,7 @@ func (s *Set) Create(tx *sqlx.Tx) error {
 			:reps,
 			:rep_unit,
 			:rest,
-			:order
+			:ordering
 		)`, setTableName)
 	_, err := tx.NamedExec(q, s)
 	return err
