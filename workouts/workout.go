@@ -56,23 +56,12 @@ func (w *Workout) Retrieve(tx *sqlx.Tx) error {
 	if err := tx.Get(w, q, w.ID); err != nil {
 		return err
 	}
-	// Retrieve associated exercise IDs
-	var exIDs []int
-	q = fmt.Sprintf(`
-		SELECT exercise_id
-		FROM %s
-		WHERE workout_id = $1`,
-		exerciseTableName)
-	if err := tx.Select(&exIDs, q, w.ID); err != nil {
+	exs, err := GetExercisesByWorkoutID(tx, w.ID)
+	if err != nil {
 		return err
 	}
-	log.Printf("Workout %d Exercise IDs: %v", w.ID, exIDs)
-	// Lookup exercises by the ID
-	for _, i := range exIDs {
-		ex := Exercise{ID: i}
-		ex.Retrieve(tx) // Implicit set lookup
-		w.Exercises = append(w.Exercises, ex)
-	}
+	w.Exercises = exs
+	log.Printf("Workout %d Exercises: %v", w.ID, w.Exercises)
 	// TODO Lookup tags
 	return nil
 }

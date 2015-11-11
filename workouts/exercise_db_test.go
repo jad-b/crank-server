@@ -29,3 +29,13 @@ func TestExerciseCreate(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSetRetrieval(t *testing.T) {
+	ex := *testExercise
+	if err := torque.Transact(db, ex.Create); err != nil {
+		t.Fatal(err)
+	}
+	if err := torque.Transact(db, ex.Delete); err != nil {
+		t.Fatal(err)
+	}
+}

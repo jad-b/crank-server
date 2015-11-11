@@ -91,6 +91,43 @@ func (s *Set) Delete(tx *sqlx.Tx) error {
 	return err
 }
 
+// RetrieveSetsByExerciseID does that.
+func RetrieveSetsByExerciseID(tx *sqlx.Tx, exerciseID int) (sets []Set, err error) {
+	if exerciseID == 0 {
+		return nil, errors.New("Exercise has no ID for lookup")
+	}
+	// Build query
+	var rows *sqlx.Rows
+	q := fmt.Sprintf(`
+		SELECT *
+		FROM %s
+		WHERE exercise_id=$1`,
+		setTableName)
+	// Retrieve all sets for this exercise
+	rows, err = tx.Queryx(q, exerciseID)
+	if err != nil {
+		return nil, err
+	}
+	// Scan them into Set structs
+	var i int
+	for rows.Next() {
+		var set Set
+		if err = rows.StructScan(&set); err == nil {
+			log.Printf("Set: %v", set)
+			sets = append(sets, set)
+		} else {
+			log.Print(err)
+		}
+		log.Printf("Scanned %d set(s)", i)
+		i++
+	}
+	if err = rows.Err(); err != nil {
+		log.Print(err)
+	}
+	log.Printf("Loaded Exercise %d's Sets: %v", exerciseID, sets)
+	return sets, err
+}
+
 // Build WHERE clause based off of provided data
 func (s *Set) buildWhere() string {
 	if s.SetID != 0 { // Use id lookup

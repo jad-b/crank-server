@@ -72,20 +72,55 @@ func (ex *Exercise) Create(tx *sqlx.Tx) error {
 
 // Retrieve queries the DB for the matching Exercise record
 func (ex *Exercise) Retrieve(tx *sqlx.Tx) error {
-	tmp := *ex
 	q := fmt.Sprintf(`
 		SELECT *
 		FROM %s
-		WHERE exercise_id=:exercise_id`,
+		WHERE exercise_id=$1`,
 		exerciseTableName)
-	if err := tx.Get(ex, q, &tmp); err != nil {
+	if err := tx.Get(ex, q, ex.ID); err != nil {
 		return err
 	}
 	log.Printf("%v", ex)
 	// Retrieve Sets
+
 	// Retrieve Modifiers
 	// Retrieve Tags
 	return nil
+}
+
+// GetExercisesByWorkoutID looks up multiple Exercises at once using a common Workout ID.
+func GetExercisesByWorkoutID(tx *sqlx.Tx, workoutID int) (exs []Exercise, err error) {
+	var rows *sqlx.Rows
+	// Retrieve associated exercise IDs
+	q := fmt.Sprintf(`
+		SELECT *
+		FROM %s
+		WHERE workout_id = $1`,
+		exerciseTableName)
+	rows, err = tx.Queryx(q, workoutID)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Queried Workout %d exercises", workoutID)
+	// Load each row into an Exercise struct
+	for rows.Next() {
+		var ex Exercise
+		if err = rows.StructScan(&ex); err == nil {
+			exs = append(exs, ex)
+		}
+	}
+	// This is outside the first loop due to lib/pq being unable to handle
+	// multiple active queries within the same Tx. The only other known
+	// solution is to use a separate DB connection.
+	// See lib/pq#81.
+	for _, ex := range exs {
+		sets, err := RetrieveSetsByExerciseID(tx, ex.ID)
+		if err == nil { // Only attach if no errors
+			ex.Sets = sets
+		}
+	}
+	log.Printf("Loaded Workout %d's Exercises: %v", workoutID, exs)
+	return exs, err
 }
 
 // Delete removes the exercise entry.

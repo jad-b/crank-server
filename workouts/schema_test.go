@@ -19,7 +19,31 @@ var (
 				},
 				LastModified: time.Now(),
 			},
-			Exercise{}, // Placeholder for test exercise
+			{
+				ID:        2,
+				Movement:  "Squat",
+				Modifiers: []string{"Back"},
+				Sets: []Set{
+					{
+						SetID:      4,
+						ExerciseID: 2,
+						Weight:     20,
+						WeightUnit: Kilograms,
+						Reps:       5,
+						RepUnit:    Repetition,
+						Rest:       -1,
+						Order:      1,
+					},
+					{5, 2, 60, Kilograms, 5, Repetition, -1, 2},
+					{6, 2, 80, Kilograms, 3, Repetition, -1, 3},
+					{7, 2, 90, Kilograms, 3, Repetition, -1, 4},
+					{8, 2, 91, Kilograms, 5, Repetition, -1, 5},
+					{9, 2, 105, Kilograms, 5, Repetition, -1, 6},
+					{10, 2, 119, Kilograms, 4, Repetition, -1, 7},
+				},
+				Tags:         []Tag{{"comment", "coming off drill weekend, tired and small"}},
+				LastModified: time.Now(),
+			},
 			{
 				ID:        3,
 				Movement:  "Curl",
@@ -33,38 +57,9 @@ var (
 		},
 		Tags: []Tag{},
 	}
-	testExercise = &Exercise{
-		ID:           2,
-		Movement:     "Squat",
-		Modifiers:    []string{"Back"},
-		Sets:         nil, // Placeholder for testSet
-		Tags:         []Tag{{"comment", "coming off drill weekend, tired and small"}},
-		LastModified: time.Now(),
-	}
-	testSets = []Set{
-		{
-			SetID:      4,
-			ExerciseID: testExercise.ID,
-			Weight:     20,
-			WeightUnit: Kilograms,
-			Reps:       5,
-			RepUnit:    Repetition,
-			Rest:       -1,
-			Order:      1,
-		},
-		{5, testExercise.ID, 60, Kilograms, 5, Repetition, -1, 2},
-		{6, testExercise.ID, 80, Kilograms, 3, Repetition, -1, 3},
-		{7, testExercise.ID, 90, Kilograms, 3, Repetition, -1, 4},
-		{8, testExercise.ID, 91, Kilograms, 5, Repetition, -1, 5},
-		{9, testExercise.ID, 105, Kilograms, 5, Repetition, -1, 6},
-		{10, testExercise.ID, 119, Kilograms, 4, Repetition, -1, 7},
-	}
+	testExercise = &testWorkout.Exercises[1]
+	testSets     = testExercise.Sets
 )
-
-func init() {
-	testWorkout.Exercises[1] = *testExercise
-	testExercise.Sets = testSets
-}
 
 func TestWorkoutCreated(t *testing.T) {
 	if testSets != nil && testExercise != nil && testWorkout != nil {
