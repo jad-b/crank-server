@@ -10,3 +10,8 @@ db:
   volumes:
     - ~/data/torque/pg_data:/var/lib/postgresql/data
   container_name: torque_db
+  log_driver: "json-file"
+  log_opt:
+    max-size: 50m
+    max-file: "3"
+

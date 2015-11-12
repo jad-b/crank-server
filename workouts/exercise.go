@@ -117,12 +117,12 @@ func GetExercisesByWorkoutID(tx *sqlx.Tx, workoutID int) (exs []Exercise, err er
 		sets, err := RetrieveSetsByExerciseID(tx, ex.ID)
 		if err == nil { // Only attach if no errors
 			exs[i].Sets = sets
-			log.Printf("Loaded Exercise %s:%d's sets: %#v", ex.Movement, ex.ID, ex.Sets)
+			// log.Printf("Loaded Exercise %s:%d's sets: %#v", ex.Movement, ex.ID, ex.Sets)
 		} else {
 			log.Printf("Error while loading exercise %d's sets", ex.ID)
 		}
 	}
-	log.Printf("Loaded Workout %d's Exercises: %#v", workoutID, exs)
+	// log.Printf("Loaded Workout %d's Exercises: %#v", workoutID, exs)
 	return exs, err
 }
 

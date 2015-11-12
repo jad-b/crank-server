@@ -6,7 +6,7 @@ TEST_ARGS?=
 TEST_BIN_ARGS?=
 
 TORQUE_PKG=github.com/jad-b/torque
-TORQUE_APPS=cli rest redteam
+TORQUE_APPS=cli rest redteam ui
 APPS=$(addprefix torque_, $(TORQUE_APPS))
 
 # Build all binaries

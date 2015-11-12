@@ -13,15 +13,35 @@ import (
 // Defines the data model for workouts
 
 // MassUnit defines units of measurement for mass
-type MassUnit int
+type MassUnit string
 
 // See MassUnit
 const (
-	Pounds MassUnit = iota
-	Kilograms
-	Lbs = Pounds
-	Kgs = Kilograms
+	Pounds    MassUnit = "pounds"
+	Kilograms          = "kilograms"
+	Lbs                = "lbs"
+	Kgs                = "kgs"
 )
+
+// Value converts the MassUnit into a string
+func (ru MassUnit) Value() (driver.Value, error) {
+	return driver.Value(string(ru)), nil
+}
+
+// Scan converts the MassUnit back into a string.
+func (ru *MassUnit) Scan(src interface{}) error {
+	// let's support string and []byte
+	switch v := src.(type) {
+	case string:
+		*ru = MassUnit(v)
+		return nil
+	case []byte:
+		*ru = MassUnit(string(v))
+		return nil
+	default:
+		return errors.New("Incompatible type for MassUnit")
+	}
+}
 
 // RepUnit is the unit of the work quantity performed.
 // A weight lifter would perform repetitions, a swimmer may perform laps,

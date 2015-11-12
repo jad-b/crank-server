@@ -56,12 +56,11 @@ func TestWorkoutRetrieve(t *testing.T) {
 	}
 	for i := range wkt2.Exercises {
 		if wkt2.Exercises[i].Sets == nil {
-			t.Logf("Exercise:\n%#v", wkt2.Exercises[i])
 			t.Fatalf("Failed to retrieve exercise %d sets", i)
 		}
 	}
 	// For lack of a better quick comparison...
-	t.Logf("%#v", wkt2)
+	t.Logf("Retrieved Workout:\n%#v", wkt2)
 
 	if err := torque.Transact(db, workout.Delete); err != nil {
 		t.Fatal(err)

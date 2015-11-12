@@ -3,7 +3,6 @@ package workouts
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -61,7 +60,7 @@ func (w *Workout) Retrieve(tx *sqlx.Tx) error {
 		return err
 	}
 	w.Exercises = exs
-	log.Printf("Workout %d Exercises: %#v", w.ID, w.Exercises)
+	// log.Printf("Workout %d Exercises: %#v", w.ID, w.Exercises)
 	// TODO Lookup tags
 	return nil
 }
