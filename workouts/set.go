@@ -17,7 +17,7 @@ weight integer,
 weight_unit text,
 reps integer,
 rep_unit text,
-rest interval MINUTE TO SECOND (0),
+rest bigint,
 ordering integer
 `
 )
@@ -109,11 +109,11 @@ func RetrieveSetsByExerciseID(tx *sqlx.Tx, exerciseID int) (sets []Set, err erro
 		return nil, err
 	}
 	// Scan them into Set structs
-	var i int
+	i := 1
 	for rows.Next() {
 		var set Set
 		if err = rows.StructScan(&set); err == nil {
-			log.Printf("Set: %v", set)
+			log.Printf("Set: %#v", set)
 			sets = append(sets, set)
 		} else {
 			log.Print(err)
@@ -124,7 +124,6 @@ func RetrieveSetsByExerciseID(tx *sqlx.Tx, exerciseID int) (sets []Set, err erro
 	if err = rows.Err(); err != nil {
 		log.Print(err)
 	}
-	log.Printf("Loaded Exercise %d's Sets: %v", exerciseID, sets)
 	return sets, err
 }
 

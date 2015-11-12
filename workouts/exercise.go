@@ -113,13 +113,16 @@ func GetExercisesByWorkoutID(tx *sqlx.Tx, workoutID int) (exs []Exercise, err er
 	// multiple active queries within the same Tx. The only other known
 	// solution is to use a separate DB connection.
 	// See lib/pq#81.
-	for _, ex := range exs {
+	for i, ex := range exs {
 		sets, err := RetrieveSetsByExerciseID(tx, ex.ID)
 		if err == nil { // Only attach if no errors
-			ex.Sets = sets
+			exs[i].Sets = sets
+			log.Printf("Loaded Exercise %s:%d's sets: %#v", ex.Movement, ex.ID, ex.Sets)
+		} else {
+			log.Printf("Error while loading exercise %d's sets", ex.ID)
 		}
 	}
-	log.Printf("Loaded Workout %d's Exercises: %v", workoutID, exs)
+	log.Printf("Loaded Workout %d's Exercises: %#v", workoutID, exs)
 	return exs, err
 }
 

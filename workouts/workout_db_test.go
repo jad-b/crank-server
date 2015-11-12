@@ -17,8 +17,7 @@ func TestCreateTableWorkout(t *testing.T) {
 		db,
 		workoutTableName,
 		workoutTableSQL,
-		true,
-	)
+		true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,6 +56,7 @@ func TestWorkoutRetrieve(t *testing.T) {
 	}
 	for i := range wkt2.Exercises {
 		if wkt2.Exercises[i].Sets == nil {
+			t.Logf("Exercise:\n%#v", wkt2.Exercises[i])
 			t.Fatalf("Failed to retrieve exercise %d sets", i)
 		}
 	}

@@ -1,7 +1,12 @@
 package workouts
 
 import (
+	"bytes"
 	"database/sql/driver"
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"log"
 	"time"
 )
 
@@ -26,6 +31,52 @@ type RepUnit string
 // Value converts the RepUnit into a string
 func (ru RepUnit) Value() (driver.Value, error) {
 	return driver.Value(string(ru)), nil
+}
+
+// Scan converts the RepUnit back into a string.
+func (ru *RepUnit) Scan(src interface{}) error {
+	// let's support string and []byte
+	switch v := src.(type) {
+	case string:
+		*ru = RepUnit(v)
+		return nil
+	case []byte:
+		*ru = RepUnit(string(v))
+		return nil
+	default:
+		return errors.New("Incompatible type for RepUnit")
+	}
+}
+
+// Duration lets us convert between a bigint in in Postgres and a time.Duration
+// in Go
+type Duration time.Duration
+
+// Value converts Duration to a primitive value ready to written to a database.
+func (d Duration) Value() (driver.Value, error) {
+	return driver.Value(int64(d)), nil
+}
+
+// Scan reads a Duration value from database driver type.
+func (d *Duration) Scan(raw interface{}) error {
+	switch v := raw.(type) {
+	case int64:
+		*d = Duration(v)
+	case nil:
+		*d = Duration(0)
+	case []byte:
+		log.Printf("Rest period; %d bytes:\nRaw: %v\nBase16: %x", len(v), v, v)
+		buf := bytes.NewBuffer(v)
+		var d64 int64
+		err := binary.Read(buf, binary.BigEndian, &d64)
+		if err != nil {
+			return err
+		}
+		*d = Duration(d64)
+	default:
+		return fmt.Errorf("cannot sql.Scan() strfmt.Duration from: %#v", v)
+	}
+	return nil
 }
 
 // See RepUnit
@@ -84,7 +135,7 @@ type Set struct {
 	// *after* this set would have no meaning, although it's still pretty empty
 	// when taken alone.
 	// A negative duration indicates the time is unknown
-	Rest time.Duration
+	Rest Duration
 	// Number marking the order the set was performed within the workout
 	// Thus, it only has meaning with the context of its parent workout
 	Order int `db:"ordering"`

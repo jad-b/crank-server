@@ -49,8 +49,8 @@ var (
 				Movement:  "Curl",
 				Modifiers: []string{"Ring"},
 				Sets: []Set{
-					{2, 3, 177, Pounds, 10, Repetition, -1, 8},
-					{3, 3, 177, Pounds, 5, Repetition, -1, 9},
+					{2, 3, 35, Pounds, 10, Repetition, -1, 8},
+					{3, 3, 35, Pounds, 5, Repetition, -1, 9},
 				},
 				LastModified: time.Now(),
 			},
