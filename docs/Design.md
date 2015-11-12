@@ -1,3 +1,5 @@
+Design
+======
 
 ### Why do your `structs` have so many methods?
 After much debate, it was decided that attempting to force a class-based
