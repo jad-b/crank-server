@@ -47,10 +47,17 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 // ReloadHandler always loads the template on every response
 func ReloadHandler(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path[1:] // Drop leading '/'
+	var name string
+	if len(path) == 0 {
+		name = "dev"
+	} else {
+		name = path
+	}
 	b, _ := httputil.DumpRequest(r, true)
 	log.Print(string(b))
 	// Load template
-	t := template.Must(template.ParseFiles(torque.SlashJoin(templateDir, "dev.tmpl")))
+	t := template.Must(template.ParseFiles(torque.SlashJoin(templateDir, name+".tmpl")))
 	log.Print("Rendering template")
 	t.Execute(w, nil)
 }

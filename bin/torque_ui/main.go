@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/jad-b/torque/ui"
 )
 
@@ -14,12 +13,11 @@ var (
 )
 
 func main() {
-	mux := mux.NewRouter()
 	// Serve static assets
-	mux.HandleFunc("/", ui.ReloadHandler)
-	mux.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.Dir("ui/assets"))))
+	http.HandleFunc("/", ui.ReloadHandler)
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("ui/assets"))))
 
 	log.Print("Serving on ", *addr)
-	http.ListenAndServe(*addr, mux)
+	http.ListenAndServe(*addr, nil)
 	log.Fatal("Stopping server")
 }
