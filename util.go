@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-// SlashJoin performs a strings.Join using '/' as a separator.
-func SlashJoin(args ...string) string {
-	return strings.Join(args, "/")
-}
-
 // VariadicJoin lets you skip using []string{...} notation.
 func VariadicJoin(delim string, args ...string) string {
 	return strings.Join(args, delim)
+}
+
+// SlashJoin performs a strings.Join using '/' as a separator.
+func SlashJoin(args ...string) string {
+	return VariadicJoin("/", args...)
 }
 
 // PrettyJSON pretty-prints JSON. If an error occurs, you'll get back an empty,

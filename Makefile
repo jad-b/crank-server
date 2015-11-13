@@ -39,8 +39,8 @@ swagger:
 	./swaggregate.py -m main.yaml -o swagger.yaml
 
 setup:
-	source wrench.sh; setup
-	glide up
+	wrench.sh setup
+	glide up --quick
 
 # Run goimports on every Go file
 imports:

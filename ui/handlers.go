@@ -1,22 +1,56 @@
 package ui
 
 import (
+	"flag"
+	"html/template"
+	"log"
 	"net/http"
-	"text/template"
+	"net/http/httputil"
+
+	"github.com/gorilla/mux"
+	"github.com/jad-b/torque"
 )
 
-// Collection of initialized templates
-var TemplateMap map[string]*html.Template
+var (
+	// TemplateMap is a collection of initialized templates
+	TemplateMap = make(map[string]*template.Template)
+	// Assets assigns the location of static assets
+	Assets      = flag.String("assets", "./ui/assets", "Location of html/css/js assets")
+	templateDir = torque.SlashJoin(*Assets, "html")
+)
 
 func init() {
-	for name, path := range [][]string{
-		{"index", "index.tmpl"},
+	log.Printf("Loading html from %s", templateDir)
+	for name, files := range map[string][]string{
+		"index": []string{"index.tmpl"},
 	} {
-		TemplateMap[name] = template.Must(template.New(name).Parse("html/" + path))
+		// Prefix 'html/' to every file
+		tmpls := make([]string, len(files))
+		for i := range files {
+			tmpls[i] = torque.SlashJoin(templateDir, files[i])
+		}
+		TemplateMap[name] = template.Must(template.ParseFiles(tmpls...))
 	}
+}
+
+// Routes returns the routes available for the UI
+func Routes() *mux.Router {
+	r := mux.NewRouter()
+	r.HandleFunc("/", HomeHandler)
+	return r
 }
 
 // HomeHandler renders the homepage.
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
+	TemplateMap["index"].Execute(w, nil)
+}
 
+// ReloadHandler always loads the template on every response
+func ReloadHandler(w http.ResponseWriter, r *http.Request) {
+	b, _ := httputil.DumpRequest(r, true)
+	log.Print(string(b))
+	// Load template
+	t := template.Must(template.ParseFiles(torque.SlashJoin(templateDir, "dev.tmpl")))
+	log.Print("Rendering template")
+	t.Execute(w, nil)
 }
