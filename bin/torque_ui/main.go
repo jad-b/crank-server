@@ -16,6 +16,8 @@ func main() {
 	// Serve static assets
 	http.HandleFunc("/", ui.ReloadHandler)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("ui/assets"))))
+	// Chrome will *not* let the favicon be anywhere but '/'. Oh well.
+	http.Handle("/favicon.ico", http.FileServer(http.Dir("ui/assets/img/")))
 
 	log.Print("Serving on ", *addr)
 	http.ListenAndServe(*addr, nil)
