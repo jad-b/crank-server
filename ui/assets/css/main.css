@@ -12,6 +12,11 @@
     box-sizing: border-box;
 }
 
+body {
+  color: #888;
+  font: 300 16px/22px "Lato", "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
 .grid,
 .container {
     /* No set margin + auto tells the browser to figure out equal l/r margins,
@@ -53,6 +58,66 @@ h1, h3, h4, h5, p {
     margin-bottom: 22px;
 }
 
+h1, h2, h3, h4 {
+  color: #648880;
+}
+
+h1 {
+  font-size: 36px;
+  line-height: 44px;
+}
+h2 {
+  font-size: 24px;
+  line-height: 44px;
+}
+h3 {
+  font-size: 21px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  color: #a9b2b9;
+  font-size: 14px;
+  /* Font thickness (thin->bold) */
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+strong {
+  font-weight: 400;
+}
+
+cite, em {
+  font-style: italic;
+}
+
+/*
+ ========================================
+ Links
+ ========================================
+*/
+a {
+  color: #648880;
+  /* Remove underline from hyperlinks */
+  text-decoration: none;
+}
+
+a:hover {
+  color: #a9b2b9;
+}
+
+/* Teaser class's within anchor's being hovered over that are h3's */
+.teaser a:hover h3 {
+    color: #a9b2b9;
+}
+
+/* Hyperlinks within a paragraph */
+p a {
+    /* Different colored border */
+    border-bottom: 1px solid #dfe2e5;
+}
+
 .btn {
     /* Smooth corners */
     border-radius: 5px;
@@ -67,22 +132,48 @@ h1, h3, h4, h5, p {
     padding: 10px 30px;
 }
 
+/*
+  ========================================
+  Hero (Main display on page)
+  ========================================
+*/
 .hero {
+    /* Distance between two lines of text */
+    line-height: 44px;
     padding: 22px 80px 60px 80px;
+    text-align: center;
 }
+
+.hero h2 {
+    font-size: 36px;
+}
+
+.hero p {
+    font-size: 24px;
+    font-weight: 100;
+}
+
 /*
   ========================================
   Clearfix
   ========================================
 */
+/* Clear the content before and after a "group" */
 .group:before,
 .group:after {
   content: "";
   display: table;
 }
+
+/* Remove any float after the group */
 .group:after {
   clear: both;
 }
+
+/* Remove any float going *into* the group
+ * Prevents weird inheritance issues.
+ * 'zoom: *1' is some arcane fix
+ */
 .group {
   clear: both;
   *zoom: 1;
@@ -95,8 +186,20 @@ h1, h3, h4, h5, p {
 */
 .logo {
   border-top: 4px solid #648880;
-  padding: 40px 0 22px 0;
   float: left;
+  font-size: 48px;
+  /* Thin text */
+  font-weight: 100;
+  /* A bit more space between letters */
+  letter-spacing: .5px;
+  line-height: 44px;
+  padding: 40px 0 22px 0;
+  text-transform: uppercase;
+}
+
+.tagline {
+    margin: 66px 0 22px 0;
+    text-align: right;
 }
 
 
@@ -105,10 +208,39 @@ h1, h3, h4, h5, p {
   Primary Footer
   ========================================
 */
-.primary-footer small{
+.primary-footer {
 	float: left;
+    color: #648880;
+    font-size: 14px;
+    padding-bottom: 44px;
+    padding-top: 44px;
 }
 
-.primary-footer {
-  padding: 44px 0;
+/* Small elements within the primary footer */
+.primary-footer small {
+    float: left;
+    font-weight: 400;
+}
+
+
+/*
+  ========================================
+  Primary Nav
+  ========================================
+.primary-nav {
+    font-size: 14px;
+    font-weight: 400;
+    /* Increase the space between letters */
+    letter-spacing: .5px;
+    text-transform: uppercase;
+}
+
+/*
+  ========================================
+  Navigation
+  ========================================
+*/
+.nav {
+    text-align: right;
+
 }
